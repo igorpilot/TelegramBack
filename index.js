@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const PORT = process.env.PORT || 5000;
 const app = express();
-
+const allowedOrigins = ['https://igorpilot.github.io', 'https://igorpilot.github.io/ShopData'];
 // Логування запитів до запуску інших middleware
 app.use((req, res, next) => {
     console.log(`📥 Отримано запит: ${req.method} ${req.url}`);
@@ -20,8 +20,8 @@ app.get('/', (req, res) => {
 });
 // Налаштування CORS
 app.use(cors({
-    credentials: true,
-    origin: process.env.CLIENT_URL,
+    origin: allowedOrigins,
+    credentials: true
 }));
 
 // Обробник для кореневого шляху
