@@ -161,14 +161,35 @@ class StoreService {
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-            // const similiarCode=store.rowsAll.find((item) => item.code===productData.code)
-            // const oldProduct=props.rowsAll.find((item) => item.id === productData.id);
-
-            store.rowsArrival = [{id:v1(), ...productData,  numberOfDocument, delivery, date}, ...store.rowsArrival]
-            const row = store.rowsDelivery.find(row=>row.numberOfDocument=== numberOfDocument);
-            row.price= store.rowsArrival.filter(row=>row.numberOfDocument=== numberOfDocument).reduce((sum, row) => sum +Number(row.quantity)* Number(row.purchasePrice), 0)
-            store.rowsAll = [{id:v1(), ...productData,  numberOfDocument, delivery, date}, ...store.rowsAll]
-
+            if(productData.id === "") {
+                store.rowsArrival = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsArrival]
+                const row = store.rowsDelivery.find(row => row.numberOfDocument === numberOfDocument);
+                row.price = store.rowsArrival.filter(row => row.numberOfDocument === numberOfDocument).reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+                store.rowsAll = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsAll]
+            } else {
+                store.rowsArrival = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsArrival]
+                const existProduct = store.rowsAll.find(p => p.id === productData.id);
+                if (existProduct) {
+                    existProduct.name = productData.name;
+                    existProduct.description = productData.description;
+                    existProduct.brand = productData.brand;
+                    existProduct.country = productData.country;
+                    existProduct.quantity += Number(productData.quantity);
+                    existProduct.purchasePrice = productData.purchasePrice;
+                    existProduct.profitPrice = productData.profitPrice;
+                    existProduct.sellingPrice = productData.sellingPrice;
+                    existProduct.code = productData.code;
+                }
+                const row = store.rowsDelivery.find(row => row.numberOfDocument === numberOfDocument);
+                if (row) {
+                    row.price = store.rowsArrival
+                        .filter((row) => row.numberOfDocument === numberOfDocument)
+                        .reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0);
+                }
+                store.rowsAll = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsAll]
+            }
+            store.markModified("rowsArrival");
+            store.markModified("rowsAll");
             store.markModified("rowsDelivery");
             await store.save();
             return store;
@@ -217,6 +238,27 @@ class StoreService {
 
         } catch (e) {
             console.error("❌ Помилка в addSalesProduct():", e)
+        }
+
+    }
+    async changeProduct(productData, storeId) {
+        try {
+            const store = await StoreModel.findById(storeId);
+            if (!store) {
+                throw new Error('Магазин не знайдено');
+            }
+            const rowArr=store.rowsArrival.find(row => row.id === productData.id)
+            if (rowArr) {
+                Object.assign(rowArr, productData);
+            }
+            const rowAll = store.rowsAll.find(row => row.id === productData.id)
+            if (rowAll) {
+
+            }
+            await store.save();
+            return store;
+        } catch (e) {
+            console.log("❌ Помилка в changeProduct():", e)
         }
     }
 

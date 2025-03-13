@@ -23,5 +23,6 @@ router.put('/addDelivery', storeController.addDelivery)
 router.put('/addProduct', storeController.addProduct)
 router.put('/addCustomer', storeController.addCustomer)
 router.put('/addSalesProduct', storeController.addSalesProduct)
+router.put('/changeProduct', storeController.changeProduct)
 
 module.exports = router;

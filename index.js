@@ -8,36 +8,25 @@ require('dotenv').config();
 
 const PORT = process.env.PORT || 5000;
 const app = express();
-const allowedOrigins = ['https://igorpilot.github.io', 'https://igorpilot.github.io/ShopData'];
-// Логування запитів до запуску інших middleware
+ const allowedOrigins = ['https://igorpilot.github.io', 'https://igorpilot.github.io/ShopData'];
+
 app.use((req, res, next) => {
-    console.log(`📥 Отримано запит: ${req.method} ${req.url}`);
     next();
 });
 app.get('/', (req, res) => {
-    console.log("Кореневий маршрут був викликаний.");
     res.send('Сервер працює!');
 });
-// Налаштування CORS
 app.use(cors({
     origin: allowedOrigins,
     credentials: true
 }));
 
-// Обробник для кореневого шляху
-
-
-// Використання інших middleware
 app.use(express.json());
 app.use(cookieParser());
 
-// Маршрути
 app.use('/api', router);
-
-// Обробка помилок
 app.use(errorMiddleware);
 
-// Запуск сервера
 const start = async () => {
     try {
         await mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true });

@@ -101,6 +101,13 @@ class StoreController {
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
+    async changeProduct(req, res) {
+        const {productData, storeId} = req.body;
+        const updatedStore= await StoreService.changeProduct(productData, storeId);
+        return res.json(updatedStore);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 }
 
 module.exports = new StoreController();
