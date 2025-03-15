@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const PORT = process.env.PORT || 5000;
 const app = express();
- const allowedOrigins = ['https://igorpilot.github.io', 'https://igorpilot.github.io/ShopData'];
+const allowedOrigins = ['https://igorpilot.github.io', 'https://igorpilot.github.io/ShopData'];
 
 app.use((req, res, next) => {
     next();

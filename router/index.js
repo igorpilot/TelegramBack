@@ -24,5 +24,7 @@ router.put('/addProduct', storeController.addProduct)
 router.put('/addCustomer', storeController.addCustomer)
 router.put('/addSalesProduct', storeController.addSalesProduct)
 router.put('/changeProduct', storeController.changeProduct)
+router.put('/changeNumberOfOrder', storeController.changeNumberOfOrder)
+router.put('/changeTitleOrDescriptionStore', storeController.changeTitleOrDescriptionStore)
 
 module.exports = router;

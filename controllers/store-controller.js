@@ -95,18 +95,38 @@ class StoreController {
         }
     }
     async addSalesProduct(req, res) {
+        try {
         const {newProduct, storeId, nameOfCustomer, date, numberOfOrder} = req.body;
         const updatedStore =await StoreService.addSalesProduct(newProduct, storeId, nameOfCustomer, date, numberOfOrder)
         return res.json(updatedStore);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
+    }
     async changeProduct(req, res) {
+        try {
         const {productData, storeId} = req.body;
         const updatedStore= await StoreService.changeProduct(productData, storeId);
         return res.json(updatedStore);
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }}
+    async changeNumberOfOrder(req, res) {
+        try {
+        const {value, storeId} = req.body;
+        const updatedStore = await StoreService.changeNumberOfOrder(value, storeId);
+        return res.json(updatedStore);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }}
+    async changeTitleOrDescriptionStore(req, res) {
+        try {
+        const {title, value, storeId} = req.body;
+        const updatedStore = await StoreService.changeTitleOrDescriptionStore(title, value, storeId);
+        return res.json(updatedStore);
+    }  catch (error) {
+            res.status(400).json({ message: error.message });
+        }
     }
 }
 

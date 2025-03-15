@@ -3,6 +3,7 @@ const StoreModel = require("../models/store-model");
 const mongoose = require("mongoose");
 const StoreDTO = require("./dtos/store-dto");
 const {v1} = require("uuid");
+const trace_events = require("node:trace_events");
 
 class StoreService {
     async createStore(userId, title, description) {
@@ -259,6 +260,38 @@ class StoreService {
             return store;
         } catch (e) {
             console.log("❌ Помилка в changeProduct():", e)
+        }
+    }
+    async changeNumberOfOrder(value, storeId) {
+        try {
+            const store = await StoreModel.findById(storeId);
+            if (!store) {
+                throw new Error('Магазин не знайдено');
+            }
+            store.numberOfOrder=value;
+            await store.save();
+            return store;
+        } catch (e) {
+            console.log("❌ Помилка в changeNumberOfOrder():", e)
+        }
+    }
+    async changeTitleOrDescriptionStore(title, value, storeId) {
+        try {
+            const store = await StoreModel.findById(storeId);
+            if (!store) {
+                throw new Error('Магазин не знайдено');
+            }
+            if(title=== "titleOfStore") {
+                store.title=value
+            }
+            if(title=== "descriptionOfStore") {
+                store.description=value
+            }
+
+            await store.save();
+            return store;
+        } catch (e) {
+            console.log("❌ Помилка в changeTitleOrDescriptionStore():", e)
         }
     }
 
