@@ -12,25 +12,16 @@ class StoreController {
             res.status(500).json({ message: 'Сталася помилка при створенні магазину' });
         }
     }
-    async getStores  (req, res) {
+    async deleteStore(req, res) {
         try {
-            const { userId } = req.params;
-
-            if (!userId) {
-                return res.status(400).json({ message: "userId є обов'язковим!" });
-            }
-
-            const user = await UserModel.findById(userId);
-            if (!user) {
-                return res.status(404).json({ message: "Користувача не знайдено!" });
-            }
-
-            res.json(user.stores);
+            const {userId, storeId} = req.body;
+            const store = await StoreService.deleteStore(userId, storeId);
+            res.json(store);
         } catch (error) {
-            console.error("❌ Помилка в getUserStores():", error);
-            res.status(500).json({ message: "Помилка сервера" });
+            console.error(error);
+            res.status(500).json({ message: 'Сталася помилка при видаленні магазину' });
         }
-    };
+    }
     async getUserStores(req, res) {
         try {
             const { userId } = req.params;

@@ -15,6 +15,7 @@ router.get('/activate/:link', userController.activate)
 router.get('/refresh', userController.refresh)
 router.get('/users',   userController.getUsers)
 router.post("/create", storeController.createStore);
+router.delete('/deleteStore', storeController.deleteStore);
 router.put("/addCategoryOrSupplier", storeController.addCategoryOrSupplier);
 router.get('/get-stores/:userId', storeController.getUserStores);
 router.put('/deleteCategoryOrSupplier', storeController.deleteCategoryOrSupplier)
@@ -26,5 +27,6 @@ router.put('/addSalesProduct', storeController.addSalesProduct)
 router.put('/changeProduct', storeController.changeProduct)
 router.put('/changeNumberOfOrder', storeController.changeNumberOfOrder)
 router.put('/changeTitleOrDescriptionStore', storeController.changeTitleOrDescriptionStore)
+router.delete('/deleteStore')
 
 module.exports = router;

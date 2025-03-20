@@ -33,14 +33,31 @@ class StoreService {
 
             user.stores.push(newStore);
             await user.save();
-            // const storeDto = new StoreDTO(newStore);
 
 
             return newStore;
 
         } catch (error) {
             console.error("❌ Помилка в createStore():", error);
-            throw error; // Перекидаєте помилку до контролера
+            throw error;
+        }
+    }
+    async deleteStore(userId, storeId) {
+        try {
+            const store = await StoreModel.findById(storeId);
+
+            if (!store) {
+                throw new Error("Магазин не знайдено або у вас немає прав на його видалення");
+            }
+            const user = await UserModel.findById(userId)
+            if (!user) {
+                throw new Error("Користувач не знайдений");
+            }
+            await StoreModel.findByIdAndDelete(storeId);
+            user.stores = user.stores.filter(store => store._id !== storeId);
+            await user.save();
+        } catch (error) {
+            console.log("❌ Помилка в deleteStore():", error)
         }
     }
     async getUserStores(userId) {
@@ -48,8 +65,10 @@ class StoreService {
             if (!mongoose.Types.ObjectId.isValid(userId)) {
                 throw new Error('Невірний формат userId');
             }
-
+            const user = await UserModel.findById(userId)
             const stores = await StoreModel.find({ userId });
+            user.stores = stores
+            await user.save()
             return stores;
         } catch (error) {
             console.error("❌ Помилка в getUserStores():", error);
