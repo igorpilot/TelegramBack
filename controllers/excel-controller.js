@@ -9,8 +9,6 @@ class ExcelController {
             const store = await StoreModel.findById(storeId);
             const fileName = `Склад магазину_${store.title}_${new Date().toISOString().slice(0, 10)}.xlsx`;
             const encodedFileName = encodeURIComponent(fileName);
-            console.log("Назва магазину:", store.title);
-            console.log("Форматований файл:", fileName);
             res.setHeader(
                 'Content-Type',
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -19,7 +17,6 @@ class ExcelController {
                 'Content-Disposition',
                 `attachment; filename="${encodedFileName}"`
             );
-
             res.send(buffer);
         } catch (error) {
             console.error("❌ Помилка експорту:", error);

@@ -24,18 +24,12 @@ class StoreService {
                 supplier: [],
                 rowsAll: [],
                 rowsDelivery: [],
-                rowsArrival: [],
                 rowsCustomer: [],
-                rowsSales: [],
                 numberOfOrder: 1000000
             });
-
             user.stores.push(newStore);
             await user.save();
-
-
             return newStore;
-
         } catch (error) {
             console.error("❌ Помилка в createStore():", error);
             throw error;
@@ -84,7 +78,6 @@ class StoreService {
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-
             if (label === "Menu" || label ===  "Категорія") {
                 store.menu.unshift(value.toUpperCase())
                 store.menu.sort()
@@ -186,19 +179,18 @@ class StoreService {
             if(productData.id === "") {
                 let productId= v1()
                 rowDelivery.products = [{...productData, id: productId}, ...rowDelivery.products];
-                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
                 store.rowsAll = [{...productData, id: productId}, ...store.rowsAll]
             } else {
                 const existProduct = store.rowsAll.find(p => p.id === productData.id);
                 rowDelivery.products = [{...productData, id:existProduct.id}, ...rowDelivery.products];
-                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
                 if (existProduct) {
                     Object.assign(existProduct, {
                         ...productData,
-                        quantity: existProduct.quantity + Number(productData.quantity)
+                        quantity: existProduct.quantity + productData.quantity
                     });
                 }
-
             }
             store.markModified("rowsAll");
             store.markModified("rowsDelivery");
@@ -232,29 +224,25 @@ class StoreService {
             }
             const rowCustomer = store.rowsCustomer.find(row => row.id === customerId);
             if (newProduct.id === "") {
-                console.log(newProduct);
                 rowCustomer.products = [{...newProduct, id: v1()}, ...rowCustomer.products];
                 rowCustomer.price = rowCustomer.products.reduce((sum, row) =>
                     sum + row.quantity * row.sellingPrice, 0);
         } else {
                 const existProduct = store.rowsAll.find(p => p.id === newProduct.id);
                 rowCustomer.products = [{...newProduct, id: existProduct.id}, ...rowCustomer.products];
-                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.sellingPrice), 0)
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0)
                 if (existProduct) {
                     Object.assign(existProduct, {
                         ...newProduct,
-                        quantity: existProduct.quantity - Number(newProduct.quantity)
+                        quantity: existProduct.quantity - newProduct.quantity
                     });
                 }
             }
-
             await store.save();
             return store;
-
         } catch (e) {
             console.error("❌ Помилка в addSalesProduct():", e)
         }
-
     }
     async changeProduct(productData, storeId, deliveryId, customerId) {
         try {
@@ -264,24 +252,22 @@ class StoreService {
             }
             let productInRowsAll = store.rowsAll.find(row => row.id === productData.id)
             if(deliveryId) {
-
                 const rowDelivery = store.rowsDelivery.find(p => p.id === deliveryId);
                 const product = rowDelivery.products.find(p => p.id === productData.id);
                 if (product) {
                     Object.assign(product, productData)
                 }
                 if (productInRowsAll) {
-
                     Object.assign(productInRowsAll, productData, {
-                        quantity: productInRowsAll.quantity + Number(productData.quantityDifference),
+                        quantity: productInRowsAll.quantity + productData.quantityDifference,
                     });
                 }
-                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
             }
             if(deliveryId === undefined && customerId===undefined) {
                     Object.assign(productInRowsAll, productData, {
-                        quantity: Number(productData.quantity),
-                        purchaseTotal: Number(productData.purchaseTotal),
+                        quantity: productData.quantity,
+                        purchaseTotal: productData.purchaseTotal,
                     });
                 store.markModified("rowsAll");
             }
@@ -293,10 +279,10 @@ class StoreService {
                 }
                 if (productInRowsAll) {
                     Object.assign(productInRowsAll, productData, {
-                        quantity: productInRowsAll.quantity - Number(productData.quantityDifference),
+                        quantity: productInRowsAll.quantity - productData.quantityDifference,
                     });
                 }
-                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.sellingPrice), 0)
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0)
             }
             await store.save();
             return store;
@@ -306,7 +292,6 @@ class StoreService {
     }
     async deleteProduct(productData, storeId, deliveryId, customerId) {
         try {
-            console.log("id", customerId)
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
@@ -318,44 +303,40 @@ class StoreService {
                 if (deliveryRow) {
                     const updatedProduct = {
                         ...productInRowsAll,
-                        quantity: Number(productInRowsAll.quantity) - Number(deliveryProduct.quantity)
+                        quantity: productInRowsAll.quantity - deliveryProduct.quantity
                     };
                     store.rowsAll = store.rowsAll.map(p =>
                         p.id === productData.id ? updatedProduct : p
                     );
                     deliveryRow.products = deliveryRow.products.filter(p => p.id !== productData.id);
                 }
-                deliveryRow.price = deliveryRow.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+                deliveryRow.price = deliveryRow.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
             }
             if(deliveryId === undefined && customerId===undefined) {
                 store.rowsAll = store.rowsAll.filter(p => p.id !== productData.id);
                 store.markModified("rowsAll");
                 };
             if (customerId) {
-                console.log('deliveryId', deliveryId)
                 const customerRow = store.rowsCustomer.find(row => row.id === customerId);
                 const customerProduct = customerRow.products.find(p => p.id === productData.id);
                 if (customerRow) {
                     const updatedProduct = {
                         ...productInRowsAll,
-                        quantity: Number(productInRowsAll.quantity) + Number(customerProduct.quantity)
+                        quantity: productInRowsAll.quantity + customerProduct.quantity
                     };
                     store.rowsAll = store.rowsAll.map(p =>
                         p.id === productData.id ? updatedProduct : p
                     );
                     customerRow.products = customerRow.products.filter(p => p.id !== productData.id);
                 }
-                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.sellingPrice), 0)
+                customerRow.price = customerRow.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0)
             }
-
-
             await store.save();
             return store;
         } catch (e) {
             console.log("❌ Помилка в deleteProduct():", e)
         }
     }
-
     async changeNumberOfOrder(value, storeId) {
         try {
             const store = await StoreModel.findById(storeId);
@@ -381,7 +362,6 @@ class StoreService {
             if(title=== "descriptionOfStore") {
                 store.description=value
             }
-
             await store.save();
             return store;
         } catch (e) {
