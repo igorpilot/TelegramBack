@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
     res.send('Сервер працює!');
 });
 app.use(cors({
-    origin: allowedOrigins,
+    origin: process.env.CLIENT_URL,
     credentials: true
 }));
 

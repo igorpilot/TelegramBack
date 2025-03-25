@@ -3,7 +3,6 @@ const StoreModel = require("../models/store-model");
 const mongoose = require("mongoose");
 const StoreDTO = require("./dtos/store-dto");
 const {v1} = require("uuid");
-const trace_events = require("node:trace_events");
 
 class StoreService {
     async createStore(userId, title, description) {
@@ -87,9 +86,11 @@ class StoreService {
             }
 
             if (label === "Menu" || label ===  "Категорія") {
-                store.menu.unshift(value.toUpperCase());
+                store.menu.unshift(value.toUpperCase())
+                store.menu.sort()
             } else if (label === "Supplier" || label === "Постачальник") {
                 store.supplier.unshift(value.toUpperCase());
+                store.supplier.sort()
             } else {
                 throw new Error("Невідомий тип оновлення");
             }
@@ -140,7 +141,7 @@ class StoreService {
                     throw new Error("Категорія не знайдена");
                 }
                 store.menu[index] = newValue.toUpperCase();
-                store.markModified("menu"); // Позначаємо поле як змінене
+                store.markModified("menu");
             }
             else if (title === "supplier") {
                 const index = store.supplier.findIndex(item => item.toUpperCase() === oldValue.toUpperCase());
@@ -175,40 +176,30 @@ class StoreService {
             console.error("❌ Помилка в addDelivery():", e)
         }
     }
-    async addProduct(productData, storeId, numberOfDocument, delivery, date) {
+    async addProduct(productData, storeId, deliveryId) {
         try {
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
+            const rowDelivery = store.rowsDelivery.find(row => row.id === deliveryId);
             if(productData.id === "") {
-                store.rowsArrival = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsArrival]
-                const row = store.rowsDelivery.find(row => row.numberOfDocument === numberOfDocument);
-                row.price = store.rowsArrival.filter(row => row.numberOfDocument === numberOfDocument).reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
-                store.rowsAll = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsAll]
+                let productId= v1()
+                rowDelivery.products = [{...productData, id: productId}, ...rowDelivery.products];
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+                store.rowsAll = [{...productData, id: productId}, ...store.rowsAll]
             } else {
-                store.rowsArrival = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsArrival]
                 const existProduct = store.rowsAll.find(p => p.id === productData.id);
+                rowDelivery.products = [{...productData, id:existProduct.id}, ...rowDelivery.products];
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
                 if (existProduct) {
-                    existProduct.name = productData.name;
-                    existProduct.description = productData.description;
-                    existProduct.brand = productData.brand;
-                    existProduct.country = productData.country;
-                    existProduct.quantity += Number(productData.quantity);
-                    existProduct.purchasePrice = productData.purchasePrice;
-                    existProduct.profitPrice = productData.profitPrice;
-                    existProduct.sellingPrice = productData.sellingPrice;
-                    existProduct.code = productData.code;
+                    Object.assign(existProduct, {
+                        ...productData,
+                        quantity: existProduct.quantity + Number(productData.quantity)
+                    });
                 }
-                const row = store.rowsDelivery.find(row => row.numberOfDocument === numberOfDocument);
-                if (row) {
-                    row.price = store.rowsArrival
-                        .filter((row) => row.numberOfDocument === numberOfDocument)
-                        .reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0);
-                }
-                store.rowsAll = [{...productData, id: v1(), numberOfDocument, delivery, date}, ...store.rowsAll]
+
             }
-            store.markModified("rowsArrival");
             store.markModified("rowsAll");
             store.markModified("rowsDelivery");
             await store.save();
@@ -233,25 +224,29 @@ class StoreService {
             console.error("❌ Помилка в addCustomer():", e)
         }
     }
-    async addSalesProduct(newProduct, storeId, nameOfCustomer, date, numberOfOrder) {
+    async addSalesProduct(newProduct, storeId, customerId) {
         try {
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-            store.rowsSales = [{id: v1(), ...newProduct, nameOfCustomer, date, numberOfOrder}, ...store.rowsSales]
-            store.rowsAll= store.rowsAll.map((row) => row.id === newProduct.id ? {...row,
-                        quantity: Number(row.quantity) - Number(newProduct.quantity),
-                    }
-                    : row
-            )
-            const row = store.rowsCustomer.find(row => row.numberOfOrder === numberOfOrder);
-            if (row) {
-                row.price = store.rowsSales
-                    .filter(row => row.numberOfOrder === numberOfOrder)
-                    .reduce((sum, row) => sum + Number(row.quantity)*Number(row.sellingPrice), 0)
+            const rowCustomer = store.rowsCustomer.find(row => row.id === customerId);
+            if (newProduct.id === "") {
+                console.log(newProduct);
+                rowCustomer.products = [{...newProduct, id: v1()}, ...rowCustomer.products];
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) =>
+                    sum + row.quantity * row.sellingPrice, 0);
+        } else {
+                const existProduct = store.rowsAll.find(p => p.id === newProduct.id);
+                rowCustomer.products = [{...newProduct, id: existProduct.id}, ...rowCustomer.products];
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.sellingPrice), 0)
+                if (existProduct) {
+                    Object.assign(existProduct, {
+                        ...newProduct,
+                        quantity: existProduct.quantity - Number(newProduct.quantity)
+                    });
+                }
             }
-
 
             await store.save();
             return store;
@@ -261,19 +256,47 @@ class StoreService {
         }
 
     }
-    async changeProduct(productData, storeId) {
+    async changeProduct(productData, storeId, deliveryId, customerId) {
         try {
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-            const rowArr=store.rowsArrival.find(row => row.id === productData.id)
-            if (rowArr) {
-                Object.assign(rowArr, productData);
-            }
-            const rowAll = store.rowsAll.find(row => row.id === productData.id)
-            if (rowAll) {
+            let productInRowsAll = store.rowsAll.find(row => row.id === productData.id)
+            if(deliveryId) {
 
+                const rowDelivery = store.rowsDelivery.find(p => p.id === deliveryId);
+                const product = rowDelivery.products.find(p => p.id === productData.id);
+                if (product) {
+                    Object.assign(product, productData)
+                }
+                if (productInRowsAll) {
+
+                    Object.assign(productInRowsAll, productData, {
+                        quantity: productInRowsAll.quantity + Number(productData.quantityDifference),
+                    });
+                }
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+            }
+            if(deliveryId === undefined && customerId===undefined) {
+                    Object.assign(productInRowsAll, productData, {
+                        quantity: Number(productData.quantity),
+                        purchaseTotal: Number(productData.purchaseTotal),
+                    });
+                store.markModified("rowsAll");
+            }
+            if(customerId){
+                const rowCustomer = store.rowsCustomer.find(p => p.id === customerId);
+                const product = rowCustomer.products.find(p => p.id === productData.id);
+                if (product) {
+                    Object.assign(product, productData)
+                }
+                if (productInRowsAll) {
+                    Object.assign(productInRowsAll, productData, {
+                        quantity: productInRowsAll.quantity - Number(productData.quantityDifference),
+                    });
+                }
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.sellingPrice), 0)
             }
             await store.save();
             return store;
@@ -281,6 +304,58 @@ class StoreService {
             console.log("❌ Помилка в changeProduct():", e)
         }
     }
+    async deleteProduct(productData, storeId, deliveryId, customerId) {
+        try {
+            console.log("id", customerId)
+            const store = await StoreModel.findById(storeId);
+            if (!store) {
+                throw new Error('Магазин не знайдено');
+            }
+            let productInRowsAll = store.rowsAll.find(p => p.id === productData.id);
+            if (deliveryId) {
+                const deliveryRow = store.rowsDelivery.find(row => row.id === deliveryId);
+                const deliveryProduct = deliveryRow.products.find(p => p.id === productData.id);
+                if (deliveryRow) {
+                    const updatedProduct = {
+                        ...productInRowsAll,
+                        quantity: Number(productInRowsAll.quantity) - Number(deliveryProduct.quantity)
+                    };
+                    store.rowsAll = store.rowsAll.map(p =>
+                        p.id === productData.id ? updatedProduct : p
+                    );
+                    deliveryRow.products = deliveryRow.products.filter(p => p.id !== productData.id);
+                }
+                deliveryRow.price = deliveryRow.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.purchasePrice), 0)
+            }
+            if(deliveryId === undefined && customerId===undefined) {
+                store.rowsAll = store.rowsAll.filter(p => p.id !== productData.id);
+                store.markModified("rowsAll");
+                };
+            if (customerId) {
+                console.log('deliveryId', deliveryId)
+                const customerRow = store.rowsCustomer.find(row => row.id === customerId);
+                const customerProduct = customerRow.products.find(p => p.id === productData.id);
+                if (customerRow) {
+                    const updatedProduct = {
+                        ...productInRowsAll,
+                        quantity: Number(productInRowsAll.quantity) + Number(customerProduct.quantity)
+                    };
+                    store.rowsAll = store.rowsAll.map(p =>
+                        p.id === productData.id ? updatedProduct : p
+                    );
+                    customerRow.products = customerRow.products.filter(p => p.id !== productData.id);
+                }
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + Number(row.quantity) * Number(row.sellingPrice), 0)
+            }
+
+
+            await store.save();
+            return store;
+        } catch (e) {
+            console.log("❌ Помилка в deleteProduct():", e)
+        }
+    }
+
     async changeNumberOfOrder(value, storeId) {
         try {
             const store = await StoreModel.findById(storeId);

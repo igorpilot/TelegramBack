@@ -4,7 +4,7 @@ const {body}= require('express-validator');
 const userController = require('../controllers/user-controller');
 const authMiddleware = require('../middlewares/auth-middleware');
 const storeController = require('../controllers/store-controller');
-
+const exportExcelController = require('../controllers/excel-controller');
 router.post('/registration',
     body('email').isEmail(),
     body('password').isLength({min:6, max:32}),
@@ -25,8 +25,11 @@ router.put('/addProduct', storeController.addProduct)
 router.put('/addCustomer', storeController.addCustomer)
 router.put('/addSalesProduct', storeController.addSalesProduct)
 router.put('/changeProduct', storeController.changeProduct)
+router.delete('/deleteProduct', storeController.deleteProduct)
 router.put('/changeNumberOfOrder', storeController.changeNumberOfOrder)
 router.put('/changeTitleOrDescriptionStore', storeController.changeTitleOrDescriptionStore)
-router.delete('/deleteStore')
+router.get('/downloadExcel/:storeId', exportExcelController.exportInventory);
+
+
 
 module.exports = router;

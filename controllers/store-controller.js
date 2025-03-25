@@ -69,8 +69,8 @@ class StoreController {
     }
     async addProduct(req, res){
         try {
-            const {productData, storeId, numberOfDocument, delivery, date} = req.body;
-            const updatedStore = await StoreService.addProduct(productData, storeId, numberOfDocument, delivery, date);
+            const {productData, storeId, deliveryId} = req.body;
+            const updatedStore = await StoreService.addProduct(productData, storeId, deliveryId);
             return res.json(updatedStore);
         } catch (error) {
             res.status(400).json({ message: error.message });
@@ -87,8 +87,8 @@ class StoreController {
     }
     async addSalesProduct(req, res) {
         try {
-        const {newProduct, storeId, nameOfCustomer, date, numberOfOrder} = req.body;
-        const updatedStore =await StoreService.addSalesProduct(newProduct, storeId, nameOfCustomer, date, numberOfOrder)
+        const {newProduct, storeId, customerId} = req.body;
+        const updatedStore =await StoreService.addSalesProduct(newProduct, storeId, customerId)
         return res.json(updatedStore);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -96,12 +96,21 @@ class StoreController {
     }
     async changeProduct(req, res) {
         try {
-        const {productData, storeId} = req.body;
-        const updatedStore= await StoreService.changeProduct(productData, storeId);
+        const {productData, storeId, deliveryId, customerId} = req.body;
+        const updatedStore= await StoreService.changeProduct(productData, storeId, deliveryId, customerId);
         return res.json(updatedStore);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }}
+    async deleteProduct(req, res) {
+        try {
+            const {productData, storeId, deliveryId, customerId} = req.body;
+            const updatedStore = await StoreService.deleteProduct(productData, storeId, deliveryId, customerId);
+            return res.json(updatedStore);
+        } catch (error) {
+            res.status(400).json({ message: error.message });
+        }
+    }
     async changeNumberOfOrder(req, res) {
         try {
         const {value, storeId} = req.body;
