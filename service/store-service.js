@@ -155,13 +155,13 @@ class StoreService {
             throw error;
         }
     }
-    async addDelivery(numberOfDocument, delivery, date, price, storeId) {
+    async addDelivery(supplierInfo, storeId) {
         try {
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-            store.rowsDelivery = [{id:v1(), numberOfDocument, delivery, date, price}, ...store.rowsDelivery]
+            store.rowsDelivery = [supplierInfo, ...store.rowsDelivery]
             store.markModified("rowsDelivery");
             await store.save();
             return store;
@@ -207,7 +207,7 @@ class StoreService {
                 throw new Error('Магазин не знайдено');
             }
 
-            store.rowsCustomer = [{ id: v1(), ...customerInfo}, ...store.rowsCustomer]
+            store.rowsCustomer = [customerInfo, ...store.rowsCustomer]
             store.numberOfOrder++;
             store.markModified("rowsCustomer");
             await store.save();

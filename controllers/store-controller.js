@@ -60,8 +60,8 @@ class StoreController {
     }
     async addDelivery(req, res) {
         try {
-            const {numberOfDocument, delivery, date, price, storeId} = req.body;
-            const updatedStore = await StoreService.addDelivery(numberOfDocument, delivery, date, price, storeId)
+            const {supplierInfo, storeId} = req.body;
+            const updatedStore = await StoreService.addDelivery(supplierInfo, storeId)
             return res.json(updatedStore);
         } catch (error) {
             res.status(400).json({ message: error.message });
