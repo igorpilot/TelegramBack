@@ -1,6 +1,6 @@
 const StoreService = require("../service/store-service");
 const error = require("nodemailer/lib/mail-composer");
-
+const cloudinary = require('../cloudinaryConfig');
 class StoreController {
     async createStore(req, res) {
         try {
@@ -67,12 +67,34 @@ class StoreController {
             res.status(400).json({ message: error.message });
         }
     }
-    async addProduct(req, res){
+    async uploadImage(req, res) {
         try {
-            const {productData, storeId, deliveryId} = req.body;
-            const updatedStore = await StoreService.addProduct(productData, storeId, deliveryId);
+            if (!req.file) {
+                return res.status(400).json({ message: "Файл не знайдено" });
+            }
+
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "products",
+                transformation: [
+                    {width: 1000, crop: "scale"},
+                    {quality: "auto"},
+                    {fetch_format: "auto"}
+                ],
+            });
+
+            return res.json({ url: result.secure_url });
+        } catch (error) {
+            console.error("❌ Помилка завантаження зображення:", error);
+            res.status(500).json({ message: "Помилка завантаження зображення" });
+        }
+    }
+    async addProduct(req, res) {
+        try {
+            const { productPayload } = req.body; // storeId і deliveryId тепер у productPayload
+            const updatedStore = await StoreService.addProduct(productPayload);
             return res.json(updatedStore);
         } catch (error) {
+            console.error("❌ Помилка в addProduct():", error);
             res.status(400).json({ message: error.message });
         }
     }

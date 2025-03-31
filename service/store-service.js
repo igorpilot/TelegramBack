@@ -2,6 +2,7 @@ const UserModel = require("../models/user-model");
 const StoreModel = require("../models/store-model");
 const mongoose = require("mongoose");
 const StoreDTO = require("./dtos/store-dto");
+
 const {v1} = require("uuid");
 
 class StoreService {
@@ -169,37 +170,48 @@ class StoreService {
             console.error("❌ Помилка в addDelivery():", e)
         }
     }
-    async addProduct(productData, storeId, deliveryId) {
+    async addProduct(productPayload) {
         try {
-            const store = await StoreModel.findById(storeId);
+            console.log(productPayload);
+            const store = await StoreModel.findById(productPayload.storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-            const rowDelivery = store.rowsDelivery.find(row => row.id === deliveryId);
-            if(productData.id === "") {
-                let productId= v1()
-                rowDelivery.products = [{...productData, id: productId}, ...rowDelivery.products];
-                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
-                store.rowsAll = [{...productData, id: productId}, ...store.rowsAll]
+
+            let imageUrl = productPayload.image || null;
+
+            const rowDelivery = store.rowsDelivery.find(row => row.id === productPayload.deliveryId);
+            if (!rowDelivery) {
+                throw new Error('Доставка не знайдена');
+            }
+
+            if (!productPayload.id) {
+                let productId = v1();
+                rowDelivery.products = [{ ...productPayload, id: productId, image: imageUrl }, ...rowDelivery.products];
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0);
+                store.rowsAll = [{ ...productPayload, id: productId, image: imageUrl }, ...store.rowsAll];
             } else {
-                const existProduct = store.rowsAll.find(p => p.id === productData.id);
-                rowDelivery.products = [{...productData, id:existProduct.id}, ...rowDelivery.products];
-                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
+                const existProduct = store.rowsAll.find(p => p.id === productPayload.id);
+                rowDelivery.products = [{ ...productPayload, id: existProduct.id, image: imageUrl }, ...rowDelivery.products];
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0);
+
                 if (existProduct) {
                     Object.assign(existProduct, {
-                        ...productData,
-                        quantity: existProduct.quantity + productData.quantity
+                        ...productPayload,
+                        quantity: existProduct.quantity + productPayload.quantity,
+                        image: imageUrl
                     });
                 }
             }
-            store.markModified("rowsAll");
-            store.markModified("rowsDelivery");
+
             await store.save();
             return store;
         } catch (e) {
-            console.error("❌ Помилка в addProduct():", e)
+            console.error("❌ Помилка в addProduct():", e);
+            throw new Error("Не вдалося додати товар");
         }
     }
+
     async addCustomer(customerInfo, storeId) {
         try {
             const store = await StoreModel.findById(storeId);
@@ -246,48 +258,57 @@ class StoreService {
     }
     async changeProduct(productData, storeId, deliveryId, customerId) {
         try {
+            console.log('img', productData.image);
             const store = await StoreModel.findById(storeId);
             if (!store) {
-                throw new Error('Магазин не знайдено');
+                throw new Error("Магазин не знайдено");
             }
-            let productInRowsAll = store.rowsAll.find(row => row.id === productData.id)
-            if(deliveryId) {
+
+            let productInRowsAll = store.rowsAll.find(row => row.id === productData.id);
+            let imageUrl = productData.image || null;
+
+            if (imageUrl === null && productInRowsAll?.image) {
+                productInRowsAll.image = null;
+            }
+
+            if (deliveryId) {
                 const rowDelivery = store.rowsDelivery.find(p => p.id === deliveryId);
-                const product = rowDelivery.products.find(p => p.id === productData.id);
+                const product = rowDelivery?.products.find(p => p.id === productData.id);
+
                 if (product) {
-                    Object.assign(product, productData)
+                    Object.assign(product, productData, { image: imageUrl });
                 }
                 if (productInRowsAll) {
-                    Object.assign(productInRowsAll, productData, {
-                        quantity: productInRowsAll.quantity + productData.quantityDifference,
-                    });
+                    Object.assign(productInRowsAll, productData, { image: imageUrl });
                 }
-                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0)
+
+                rowDelivery.price = rowDelivery.products.reduce((sum, row) => sum + row.quantity * row.purchasePrice, 0);
             }
-            if(deliveryId === undefined && customerId===undefined) {
-                    Object.assign(productInRowsAll, productData, {
-                        quantity: productData.quantity,
-                        purchaseTotal: productData.purchaseTotal,
-                    });
+
+            if (!deliveryId && !customerId) {
+                Object.assign(productInRowsAll, productData, { image: imageUrl });
                 store.markModified("rowsAll");
             }
-            if(customerId){
+
+            if (customerId) {
                 const rowCustomer = store.rowsCustomer.find(p => p.id === customerId);
-                const product = rowCustomer.products.find(p => p.id === productData.id);
+                const product = rowCustomer?.products.find(p => p.id === productData.id);
+
                 if (product) {
-                    Object.assign(product, productData)
+                    Object.assign(product, productData, { image: imageUrl });
                 }
                 if (productInRowsAll) {
-                    Object.assign(productInRowsAll, productData, {
-                        quantity: productInRowsAll.quantity - productData.quantityDifference,
-                    });
+                    Object.assign(productInRowsAll, productData, { image: imageUrl });
                 }
-                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0)
+
+                rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0);
             }
+
             await store.save();
             return store;
         } catch (e) {
-            console.log("❌ Помилка в changeProduct():", e)
+            console.error("❌ Помилка в ProductService.changeProduct():", e);
+            throw new Error("Не вдалося оновити товар");
         }
     }
     async deleteProduct(productData, storeId, deliveryId, customerId) {

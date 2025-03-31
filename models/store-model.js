@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const RowsAllSchema = new mongoose.Schema({
     id: { type: String, required: true },
+    image: { type: String, required: false, default: null },
     category: { type: String, required: false },
     name: { type: String, required: true },
     description: { type: String, required: false },
@@ -19,6 +20,7 @@ const RowsAllSchema = new mongoose.Schema({
 });
 const RowsArrivalProductSchema = new mongoose.Schema({
     id: { type: String, required: true },
+    image: { type: String, required: false, default: null },
     category: { type: String, required: false },
     name: { type: String, required: true },
     description: { type: String},
@@ -26,7 +28,7 @@ const RowsArrivalProductSchema = new mongoose.Schema({
     country: { type: String, required: false },
     quantity: { type: Number, required: true },
     purchasePrice: { type: Number, required: true },
-    purchaseTotal: { type: Number, required: true },
+    purchaseTotal: { type: Number, required: false },
     profitPrice: { type: Number, required: false },
     sellingPrice: { type: Number, required: false },
     code: {type: String, required: false }
