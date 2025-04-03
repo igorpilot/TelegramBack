@@ -1,6 +1,6 @@
 const StoreModel=require('../models/store-model');
 class OnlineStoreService {
-    async getProducts(storeId) {
+    async getStore(storeId) {
         try {
             const store = await StoreModel.findOne({title: storeId});
 
@@ -8,7 +8,7 @@ class OnlineStoreService {
                 throw new Error('Магазин не знайдено');
             }
 
-            return store.rowsAll;
+            return store;
         } catch (error) {
             console.log("Error in getProducts", error);
             return null;

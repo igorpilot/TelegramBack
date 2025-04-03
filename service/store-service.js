@@ -74,17 +74,19 @@ class StoreService {
             if (!mongoose.Types.ObjectId.isValid(storeId)) {
                 throw new Error('Невірний формат storeId');
             }
-
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error('Магазин не знайдено');
             }
-            if (label === "Menu" || label ===  "Категорія") {
+            if (label === "Category" || label ===  "Категорія") {
                 store.menu.unshift(value.toUpperCase())
                 store.menu.sort()
             } else if (label === "Supplier" || label === "Постачальник") {
                 store.supplier.unshift(value.toUpperCase());
                 store.supplier.sort()
+            } else if (label === "Brand" || label === "Бренд") {
+                store.brands.unshift(value.toUpperCase());
+                store.brands.sort()
             } else {
                 throw new Error("Невідомий тип оновлення");
             }
@@ -111,6 +113,8 @@ class StoreService {
                 store.menu = store.menu.filter(item => item.toUpperCase() !== value.toUpperCase());
             } else if (label === "supplier") {
                 store.supplier = store.supplier.filter(item => item.toUpperCase() !== value.toUpperCase());
+            } else if (label === "brand") {
+                store.brands = store.brands.filter(item => item.toUpperCase() !== value.toUpperCase());
             } else {
                 throw new Error("Невідомий тип оновлення");
             }
@@ -144,6 +148,14 @@ class StoreService {
                 }
                 store.supplier[index] = newValue.toUpperCase();
                 store.markModified("supplier");
+            }
+            else if (title === "brand") {
+                const index = store.brands.findIndex(item => item.toUpperCase() === oldValue.toUpperCase());
+                if (index === -1) {
+                    throw new Error("Бренд не знайдений");
+                }
+                store.brands[index] = newValue.toUpperCase();
+                store.markModified("brand");
             }
             else {
                 throw new Error("Невідомий тип оновлення");

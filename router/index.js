@@ -35,7 +35,7 @@ router.put('/changeTitleOrDescriptionStore', storeController.changeTitleOrDescri
 router.get('/downloadExcel/:storeId', exportExcelController.exportInventory);
 
 
-router.post('/getProducts', onlineStoreController.getProducts)
+router.post('/getStore', onlineStoreController.getStore)
 
 
 

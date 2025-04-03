@@ -72,6 +72,7 @@ const StoreSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: false },
     menu: { type: [String], default: [] },
+    brands: { type: [String], default: [] },
     supplier: { type: [String], default: [] },
     rowsAll: { type: [RowsAllSchema], default: [] },
     rowsDelivery: { type: [RowsDeliverySchema], default: [] },

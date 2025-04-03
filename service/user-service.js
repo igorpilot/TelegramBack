@@ -60,9 +60,7 @@ class UserService {
 
     async logout(refreshToken) {
         try {
-            console.log("🔒 Логування з refreshToken:", refreshToken);
 
-            // Перевірка, чи існує refreshToken
             if (!refreshToken) {
                 throw new Error("Refresh токен відсутній");
             }
@@ -100,9 +98,6 @@ class UserService {
             console.log("❌ Користувач не знайдений!");
             throw ApiError.UnathorizedError("User not found");
         }
-
-        console.log("User data:", user); // Перевірка чи існують дані користувача
-
         const userDto = new UserDto(user);
         const tokens = tokenService.generateTokens({...userDto});
 
