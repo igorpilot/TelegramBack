@@ -1,42 +1,44 @@
-const { Router } = require('express');  // Тут потрібно імпортувати Router
+import { Router } from 'express';
+import { body } from 'express-validator';
+import UserController from '../controllers/user-controller.js';
+import authMiddleware from '../middlewares/auth-middleware.js';
+import StoreController from '../controllers/store-controller.js';
+import OnlineStoreController from '../controllers/onlineStore-controller.js';
+import ExcelController from '../controllers/excel-controller.js';
+import upload from '../middlewares/uploadMiddleware.js';
 const router = Router();
-const {body}= require('express-validator');
-const userController = require('../controllers/user-controller');
-const authMiddleware = require('../middlewares/auth-middleware');
-const storeController = require('../controllers/store-controller');
-const onlineStoreController = require('../controllers/onlineStore-controller');
-const exportExcelController = require('../controllers/excel-controller');
-const upload = require('../middlewares/uploadMiddleware');
 router.post('/registration',
     body('email').isEmail(),
     body('password').isLength({min:6, max:32}),
-    userController.registration)
-router.post('/login', userController.login)
-router.post('/logout', userController.logout)
-router.get('/activate/:link', userController.activate)
-router.get('/refresh', userController.refresh)
-router.get('/users',   userController.getUsers)
-router.post("/create", storeController.createStore);
-router.delete('/deleteStore', storeController.deleteStore);
-router.put("/addCategoryOrSupplier", storeController.addCategoryOrSupplier);
-router.get('/get-stores/:userId', storeController.getUserStores);
-router.put('/deleteCategoryOrSupplier', storeController.deleteCategoryOrSupplier)
-router.put('/changeCategoryOrSupplier', storeController.changeCategoryOrSupplier)
-router.put('/addDelivery', storeController.addDelivery)
-router.put('/addProduct', storeController.addProduct)
-router.post('/uploadImage', upload.single('image'), storeController.uploadImage);
-router.post('/addProduct', storeController.addProduct);
-router.put('/addCustomer', storeController.addCustomer)
-router.put('/addSalesProduct', storeController.addSalesProduct)
-router.put('/changeProduct', storeController.changeProduct)
-router.delete('/deleteProduct', storeController.deleteProduct)
-router.put('/changeNumberOfOrder', storeController.changeNumberOfOrder)
-router.put('/changeTitleOrDescriptionStore', storeController.changeTitleOrDescriptionStore)
-router.get('/downloadExcel/:storeId', exportExcelController.exportInventory);
+    UserController.registration)
+router.post('/login', UserController.login)
+router.post('/logout',authMiddleware, UserController.logout)
+router.get('/activate/:link', UserController.activate)
+router.get('/refresh',  UserController.refresh)
+router.post('/forgotPassword', UserController.forgotPassword);
+router.post('/resetPassword', UserController.resetPassword);
+router.get('/users', authMiddleware,   UserController.getUsers)
+router.post("/create", authMiddleware, StoreController.createStore);
+router.delete('/deleteStore', authMiddleware, StoreController.deleteStore);
+router.post("/addCategoryOrSupplier", authMiddleware, StoreController.addCategoryOrSupplier);
+router.get('/get-stores/:userId', StoreController.getUserStores);
+router.put('/deleteCategoryOrSupplier', authMiddleware, StoreController.deleteCategoryOrSupplier)
+router.put('/changeCategoryOrSupplier', authMiddleware, StoreController.changeCategoryOrSupplier)
+router.post('/addDelivery', authMiddleware, StoreController.addDelivery)
+router.post('/addProduct', authMiddleware, StoreController.addProduct)
+router.post('/uploadImage', authMiddleware, upload.single('image'), StoreController.uploadImage);
+router.post('/addProduct', authMiddleware, StoreController.addProduct);
+router.post('/addCustomer', authMiddleware, StoreController.addCustomer)
+router.post('/addSalesProduct', authMiddleware, StoreController.addSalesProduct)
+router.put('/changeProduct', authMiddleware, StoreController.changeProduct)
+router.delete('/deleteProduct', authMiddleware, StoreController.deleteProduct)
+router.put('/changeNumberOfOrder', authMiddleware, StoreController.changeNumberOfOrder)
+router.put('/changeTitleOrDescriptionStore', authMiddleware, StoreController.changeTitleOrDescriptionStore)
+router.get('/downloadExcel/:storeId', authMiddleware, ExcelController.exportInventory);
 
 
-router.post('/getStore', onlineStoreController.getStore)
+router.post('/getStore', OnlineStoreController.getStore)
 
 
 
-module.exports = router;
+export default router;

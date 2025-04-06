@@ -1,6 +1,5 @@
-const StoreService = require("../service/store-service");
-const error = require("nodemailer/lib/mail-composer");
-const cloudinary = require('../cloudinaryConfig');
+import StoreService from "../service/store-service.js";
+import cloudinary from "../cloudinaryConfig.js";
 class StoreController {
     async createStore(req, res) {
         try {
@@ -26,7 +25,7 @@ class StoreController {
         try {
             const { userId } = req.params;
             const stores = await StoreService.getUserStores(userId);
-            return res.json(stores);
+            return res.status(201).json(stores);
         } catch (error) {
             res.status(400).json({ message: error.message });
         }
@@ -90,7 +89,7 @@ class StoreController {
     }
     async addProduct(req, res) {
         try {
-            const { productPayload } = req.body; // storeId і deliveryId тепер у productPayload
+            const { productPayload } = req.body;
             const updatedStore = await StoreService.addProduct(productPayload);
             return res.json(updatedStore);
         } catch (error) {
@@ -152,4 +151,4 @@ class StoreController {
     }
 }
 
-module.exports = new StoreController();
+export default new StoreController();

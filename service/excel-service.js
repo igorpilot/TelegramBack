@@ -1,5 +1,5 @@
-const StoreModel = require("../models/store-model");
-const ExcelJS = require("exceljs");
+import StoreModel from "../models/store-model.js";
+import ExcelJS from "exceljs";
 
 class ExcelService {
     async exportInventory(storeId) {
@@ -47,4 +47,4 @@ class ExcelService {
     }
 }
 
-module.exports = new ExcelService();
+export default new ExcelService();

@@ -1,4 +1,4 @@
-module.exports = class StoreDTO {
+export default class StoreDTO {
     title;
     description;
     menu;

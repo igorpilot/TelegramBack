@@ -1,5 +1,6 @@
-const StoreModel = require("../models/store-model");
-const ExcelService = require('../service/excel-service');
+import StoreModel from '../models/store-model.js';
+import ExcelService from '../service/excel-service.js';
+
 class ExcelController {
 
     async exportInventory(req, res) {
@@ -25,4 +26,4 @@ class ExcelController {
     };
 }
 
-module.exports = new ExcelController();
+export default  new ExcelController();

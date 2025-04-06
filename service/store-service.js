@@ -1,9 +1,8 @@
-const UserModel = require("../models/user-model");
-const StoreModel = require("../models/store-model");
-const mongoose = require("mongoose");
-const StoreDTO = require("./dtos/store-dto");
-
-const {v1} = require("uuid");
+import UserModel from "../models/user-model.js";
+import StoreModel from "../models/store-model.js";
+import mongoose from "mongoose";
+import StoreDTO from "./dtos/store-dto.js";
+import {v1} from "uuid";
 
 class StoreService {
     async createStore(userId, title, description) {
@@ -11,7 +10,6 @@ class StoreService {
             if (!mongoose.Types.ObjectId.isValid(userId)) {
                 throw new Error('Невірний формат userId');
             }
-
             const user = await UserModel.findById(userId);
             if (!user) {
                 throw new Error('Користувач не знайдений');
@@ -270,7 +268,6 @@ class StoreService {
     }
     async changeProduct(productData, storeId, deliveryId, customerId) {
         try {
-            console.log('img', productData.image);
             const store = await StoreModel.findById(storeId);
             if (!store) {
                 throw new Error("Магазин не знайдено");
@@ -403,4 +400,4 @@ class StoreService {
     }
 
 }
-module.exports =  new StoreService();
+export default  new StoreService();

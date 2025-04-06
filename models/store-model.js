@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const RowsAllSchema = new mongoose.Schema({
     id: { type: String, required: true },
@@ -80,4 +80,4 @@ const StoreSchema = new mongoose.Schema({
     numberOfOrder: { type: Number, default: 1000000 }
 });
 
-module.exports = mongoose.model('Store', StoreSchema);
+export default mongoose.model('Store', StoreSchema);

@@ -1,8 +1,10 @@
-require("dotenv").config();
-const mailService = require("./service/mail-service");
+import dotenv from 'dotenv';
+import mailService from "./service/mail-service.js";
+dotenv.config();
+
 
 async function test() {
-    const testEmail = "zhurbastudy@gmail.com";  // Вкажіть свою пошту
+    const testEmail = "zhurbastudy@gmail.com";
     const testLink = "https://example.com/activate/test";
 
     console.log("🛠 Тестуємо надсилання...");

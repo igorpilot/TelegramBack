@@ -1,4 +1,4 @@
-const OnlineStoreService = require("../service/onlineStore-service");
+import OnlineStoreService from "../service/onlineStore-service.js"
 
 class OnlineStoreController {
     async getStore(req, res) {
@@ -12,4 +12,4 @@ class OnlineStoreController {
         }
     }
 }
-module.exports = new OnlineStoreController();
+export default new OnlineStoreController();

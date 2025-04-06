@@ -1,10 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const mongoose = require('mongoose');
-const router = require('./router');
-const errorMiddleware = require('./middlewares/error-middlewares');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import mongoose from 'mongoose';
+import router from './router/index.js';
+import errorMiddleware from './middlewares/error-middlewares.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -14,7 +16,7 @@ app.use((req, res, next) => {
     next();
 });
 app.get('/', (req, res) => {
-    res.send('Сервер працює!');
+    res.send('Server is working!');
 });
 app.use(cors({
     origin: allowedOrigins,
@@ -24,13 +26,12 @@ app.use('/locales', express.static('public/locales'));
 
 app.use(express.json());
 app.use(cookieParser());
-
 app.use('/api', router);
 app.use(errorMiddleware);
 
 const start = async () => {
     try {
-        await mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true });
+        await mongoose.connect(process.env.DB_URL, { useUnifiedTopology: true, useNewUrlParser: true});
         app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
     } catch (error) {
         console.log(error);

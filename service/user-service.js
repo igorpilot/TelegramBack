@@ -1,37 +1,32 @@
-require("dotenv").config();
-const UserModel = require("../models/user-model");
-const bcrypt = require("bcrypt");
-const uuid = require("uuid");
-const mailService = require("./mail-service");
-const tokenService = require("./token-service");
-const UserDto = require("./dtos/user-dto");
-const ApiError = require("../exceptions/api-error");
+import dotenv from 'dotenv';
+import UserModel from '../models/user-model.js';
+import bcrypt from 'bcrypt';
+import MailService from './mail-service.js';
+import UserDto from './dtos/user-dto.js';
+import ApiError from '../exceptions/api-error.js';
+import {v4} from "uuid";
+import TokenService from "./token-service.js";
+import ResetTokenModel from "../models/reset-token-model.js";
 
-console.log("Loaded ENV:", process.env.SMTP_HOST, process.env.SMTP_PORT);
+
+dotenv.config();
 
 
 class UserService {
     async registration(email, password, firstName, lastName, phoneNumber) {
-
         try {
-
-            const candidate = await UserModel.findOne({ email });
+            const emailLow=email.toLowerCase();
+            const candidate = await UserModel.findOne({ email: emailLow });
             if (candidate) {
-                console.log("⚠️ Користувач вже існує:", candidate.email);
-                throw ApiError.BadRequest(`Користувач з такою електронною адресою ${email} вже існує`);
+                throw ApiError.BadRequest(`Користувач з такою електронною адресою ${emailLow} вже існує`);
             }
-
             const hashPassword = await bcrypt.hash(password, 3);
-            const activationLink = uuid.v4();
-            const user = await UserModel.create({ email, password: hashPassword,firstName, lastName, phoneNumber, activationLink });
-
-            await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
-
-            console.log("✅ Лист відправлено!");
-
+            const activationLink = v4();
+            const user = await UserModel.create({ email: emailLow, password: hashPassword,firstName, lastName, phoneNumber, activationLink });
+            await MailService.sendActivationMail(emailLow, `${process.env.API_URL}/api/activate/${activationLink}`);
             const userDto = new UserDto(user);
-            const tokens = tokenService.generateTokens({ ...userDto });
-            await tokenService.saveToken(userDto.id, tokens.refreshToken);
+            const tokens = TokenService.generateTokens({ ...userDto });
+            await TokenService.saveToken(userDto.id, tokens.refreshToken);
             return { ...tokens, user: userDto };
         } catch (error) {
             console.error("❌ Помилка в registration():", error);
@@ -44,72 +39,94 @@ class UserService {
         user.isActivated = true
         await user.save()
     }
-
     async login(email, password) {
-        const user = await UserModel.findOne({email})
-        if (!user) { throw ApiError.BadRequest('Користувач з такою електронною адресою вже існує')}
+        const emailLow=email.toLowerCase();
+        const user = await UserModel.findOne({email: emailLow})
+        if (!user) { throw ApiError.BadRequest('Користувач з такою електронною адресою не існує')}
         const isPassEqual = await bcrypt.compare(password, user.password)
         if (!isPassEqual) {
             throw ApiError.BadRequest('Невірний пароль')
         }
         const userDto = new UserDto(user)
-        const tokens = tokenService.generateTokens({...userDto})
-        await tokenService.saveToken(userDto._id, tokens.refreshToken)
+        const tokens = TokenService.generateTokens({...userDto})
+        await TokenService.saveToken(userDto._id, tokens.refreshToken)
         return {...tokens, user: userDto}
     }
-
     async logout(refreshToken) {
         try {
-
             if (!refreshToken) {
                 throw new Error("Refresh токен відсутній");
             }
-
-            const token = await tokenService.removeToken({refreshToken});
+            const token = await TokenService.removeToken({refreshToken});
             if (!token) {
                 throw new Error("Не вдалося видалити токен");
             }
-
-            console.log("Токен успішно видалено:", token);
             return token;
         } catch (e) {
             console.error("❌ Помилка під час logout:", e.message);
             throw new Error("Внутрішня помилка сервера під час logout");
         }
     }
-
     async refresh(refreshToken) {
         if (!refreshToken) {
-            throw ApiError.UnathorizedError("Refresh token missing");
+            throw ApiError.UnauthorizedError("Refresh token missing");
         }
-
-        const userData = tokenService.validateRefreshToken(refreshToken);
-        console.log("userData після validateRefreshToken:", userData);
-
-        const tokenFromDB = await tokenService.findToken(refreshToken);
-        console.log("tokenFromDB:", tokenFromDB);
-
+        const userData = TokenService.validateRefreshToken(refreshToken);
+        const tokenFromDB = await TokenService.findToken(refreshToken);
         if (!userData || !tokenFromDB) {
-            throw ApiError.UnathorizedError("Invalid refresh token");
+            throw ApiError.UnauthorizedError("Invalid refresh token");
         }
-
         const user = await UserModel.findOne({email: userData.email});
         if (!user) {
-            console.log("❌ Користувач не знайдений!");
-            throw ApiError.UnathorizedError("User not found");
+            throw ApiError.UnauthorizedError("User not found");
         }
         const userDto = new UserDto(user);
-        const tokens = tokenService.generateTokens({...userDto});
+        const tokens = TokenService.generateTokens({...userDto});
 
-        await tokenService.saveToken(userDto._id, tokens.refreshToken);
+        await TokenService.saveToken(userDto._id, tokens.refreshToken);
 
         return {...tokens, user: userDto};
     }
+    async forgotPassword(email) {
+        const user = await UserModel.findOne({ email });
+        if (!user) {
+            throw ApiError.BadRequest('Користувач з таким email не знайдений');
+        }
+        const resetToken = TokenService.generate(user)
+        const expiryDate = new Date();
+        expiryDate.setHours(expiryDate.getHours() + 1);
 
+        await ResetTokenModel.create({
+            user: user._id,
+            token: resetToken,
+            expiryDate
+        });
+
+        const resetLink = `${process.env.CLIENT_URL}/#/resetPassword?token=${resetToken}&email=${email}`;
+        await MailService.sendMailForReset(email, resetLink);
+
+        return { message: 'Інструкції для відновлення пароля надіслані на вашу пошту' };
+    }
+
+    async resetPassword(token, newPassword) {
+        const resetToken = await ResetTokenModel.findOne({ token });
+        if (!resetToken || resetToken.expiryDate < new Date()) {
+            throw ApiError.BadRequest('Токен недійсний або термін його дії минув');
+        }
+        const user = await UserModel.findById(resetToken.user);
+        if (!user) {
+            throw ApiError.BadRequest('Користувач не знайдений');
+        }
+
+        user.password = await bcrypt.hash(newPassword, 3);
+        await user.save();
+        await ResetTokenModel.deleteOne({ token });
+        return { message: 'Пароль успішно змінено' };
+    }
     async getAllUsers() {
         const users = await UserModel.find()
         return users
     }
 }
 
-module.exports =  new UserService();
+export default  new UserService();

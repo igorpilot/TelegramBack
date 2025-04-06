@@ -1,7 +1,12 @@
-const jwt = require('jsonwebtoken');
-const tokenModel = require('../models/token-model');
+import jwt from 'jsonwebtoken';
+import TokenSchema from '../models/token-model.js';
+import crypto from 'crypto';
+
 
 class TokenService {
+    generate() {
+        return crypto.randomBytes(32).toString('hex');
+    }
 generateTokens(user) {
     const payload = {
         id: user.id,
@@ -31,17 +36,17 @@ validateRefreshToken(token) {
     }
 }
 async saveToken(userId, refreshToken) {
-    const tokenData = await tokenModel.findOne({user:userId})
+    const tokenData = await TokenSchema.findOne({user:userId})
     if(tokenData) {
         tokenData.refreshToken = refreshToken
         return tokenData.save()
     }
-    const token = await tokenModel.create({userId, refreshToken})
+    const token = await TokenSchema.create({userId, refreshToken})
     return token
 }
     async removeToken(refreshToken) {
         try {
-            const token = await tokenModel.findOneAndDelete( refreshToken );
+            const token = await TokenSchema.findOneAndDelete( refreshToken );
             return token;
         } catch (error) {
             console.error("❌ Помилка при видаленні токену:", error.message);
@@ -49,9 +54,8 @@ async saveToken(userId, refreshToken) {
         }
     }
 async findToken(refreshToken) {
-    const tokenData= await tokenModel.findOne({refreshToken})
+    const tokenData= await TokenSchema.findOne({refreshToken})
     return tokenData
 }
 }
-
-module.exports = new TokenService();
+export default new TokenService();

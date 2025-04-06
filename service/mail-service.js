@@ -1,5 +1,6 @@
-const nodemailer = require("nodemailer");
-
+import nodemailer from "nodemailer";
+import dotenv from 'dotenv';
+dotenv.config();
 class MailService {
     constructor() {
         console.log("SMTP CONFIG:", {
@@ -29,13 +30,10 @@ class MailService {
 
     async sendActivationMail(to, link) {
         try {
-            console.log("📨 Надсилаємо лист на:", to);
-            console.log("🔗 Посилання для активації:", link);
-
             const info = await this.transporter.sendMail({
                 from: process.env.SMTP_USER,
                 to: to,
-                subject: "Активація акаунта на " + process.env.API_URL,
+                subject: "Активація акаунта на ShopData",
                 html: `<div> <h1>Для активації акаунта перейдіть за посиланням</h1><a href="${link}">${link}</a></div>`,
             });
 
@@ -44,6 +42,20 @@ class MailService {
             console.error("❌ Помилка при надсиланні листа:", error);
         }
     }
+    async sendMailForReset(to, link) {
+        try {
+            const mailOptions = await this.transporter.sendMail({
+                from: process.env.SMTP_USER,
+                to: to,
+                subject: 'Відновлення пароля на ShopData' ,
+                html: `<div> <h1>Перейдіть за посиланням для відновлення пароля: </h1><a href="${link}">${link}</a></div>`,
+            })
+            console.log("✅ Лист успішно відправлено:", mailOptions.response);
+        } catch (error) {
+            console.error("❌ Помилка при надсиланні листа:", error);
+        }
+
+    };
 }
 
-module.exports = new MailService();
+export default new MailService();

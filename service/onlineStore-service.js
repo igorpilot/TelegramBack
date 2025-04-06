@@ -1,4 +1,4 @@
-const StoreModel=require('../models/store-model');
+import StoreModel from '../models/store-model.js';
 class OnlineStoreService {
     async getStore(storeId) {
         try {
@@ -15,4 +15,4 @@ class OnlineStoreService {
         }
     }
 }
-module.exports =  new OnlineStoreService();
+export default new OnlineStoreService();
