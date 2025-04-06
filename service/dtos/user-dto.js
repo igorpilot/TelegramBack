@@ -1,4 +1,5 @@
 export default class UserDTO {
+    role;
     firstName;
     lastName;
     phoneNumber;
@@ -8,6 +9,7 @@ export default class UserDTO {
     stores;
 
     constructor(model) {
+        this.role = model.role;
         this.firstName = model.firstName;
         this.lastName = model.lastName;
         this.phoneNumber = model.phoneNumber;

@@ -10,6 +10,7 @@ class TokenService {
 generateTokens(user) {
     const payload = {
         id: user.id,
+        role: user.role,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,

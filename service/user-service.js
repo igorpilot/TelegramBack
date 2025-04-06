@@ -13,7 +13,7 @@ dotenv.config();
 
 
 class UserService {
-    async registration(email, password, firstName, lastName, phoneNumber) {
+    async registration(role, email, password, firstName, lastName, phoneNumber) {
         try {
             const emailLow=email.toLowerCase();
             const candidate = await UserModel.findOne({ email: emailLow });
@@ -22,7 +22,7 @@ class UserService {
             }
             const hashPassword = await bcrypt.hash(password, 3);
             const activationLink = v4();
-            const user = await UserModel.create({ email: emailLow, password: hashPassword,firstName, lastName, phoneNumber, activationLink });
+            const user = await UserModel.create({role, email: emailLow, password: hashPassword,firstName, lastName, phoneNumber, activationLink });
             await MailService.sendActivationMail(emailLow, `${process.env.API_URL}/api/activate/${activationLink}`);
             const userDto = new UserDto(user);
             const tokens = TokenService.generateTokens({ ...userDto });

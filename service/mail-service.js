@@ -33,7 +33,7 @@ class MailService {
             const info = await this.transporter.sendMail({
                 from: process.env.SMTP_USER,
                 to: to,
-                subject: "Активація акаунта на ShopData",
+                subject: "Активація акаунта ",
                 html: `<div> <h1>Для активації акаунта перейдіть за посиланням</h1><a href="${link}">${link}</a></div>`,
             });
 
@@ -47,7 +47,7 @@ class MailService {
             const mailOptions = await this.transporter.sendMail({
                 from: process.env.SMTP_USER,
                 to: to,
-                subject: 'Відновлення пароля на ShopData' ,
+                subject: 'Відновлення пароля' ,
                 html: `<div> <h1>Перейдіть за посиланням для відновлення пароля: </h1><a href="${link}">${link}</a></div>`,
             })
             console.log("✅ Лист успішно відправлено:", mailOptions.response);
