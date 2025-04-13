@@ -77,6 +77,7 @@ const StoreSchema = new mongoose.Schema({
     rowsAll: { type: [RowsAllSchema], default: [] },
     rowsDelivery: { type: [RowsDeliverySchema], default: [] },
     rowsCustomer: { type: [RowsCustomerSchema], default: [] },
+    rowsHistory: { type: [], default: [] },
     numberOfOrder: { type: Number, default: 1000000 }
 });
 

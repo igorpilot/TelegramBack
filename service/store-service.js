@@ -266,7 +266,7 @@ class StoreService {
             console.error("❌ Помилка в addSalesProduct():", e)
         }
     }
-    async changeProduct(productData, storeId, deliveryId, customerId) {
+    async changeProduct(productData, history, storeId, deliveryId, customerId) {
         try {
             const store = await StoreModel.findById(storeId);
             if (!store) {
@@ -312,7 +312,7 @@ class StoreService {
 
                 rowCustomer.price = rowCustomer.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0);
             }
-
+            store.rowsHistory = [ history, ...store.rowsHistory];
             await store.save();
             return store;
         } catch (e) {
@@ -320,7 +320,7 @@ class StoreService {
             throw new Error("Не вдалося оновити товар");
         }
     }
-    async deleteProduct(productData, storeId, deliveryId, customerId) {
+    async deleteProduct(productData, history, storeId, deliveryId, customerId) {
         try {
             const store = await StoreModel.findById(storeId);
             if (!store) {
@@ -361,6 +361,7 @@ class StoreService {
                 }
                 customerRow.price = customerRow.products.reduce((sum, row) => sum + row.quantity * row.sellingPrice, 0)
             }
+            store.rowsHistory = [ history, ...store.rowsHistory];
             await store.save();
             return store;
         } catch (e) {

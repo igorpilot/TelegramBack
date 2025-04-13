@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
 });
 app.use(cors({
     origin: allowedOrigins,
-    credentials: true
+    credentials: true,
 }));
 app.use('/locales', express.static('public/locales'));
 

@@ -117,16 +117,16 @@ class StoreController {
     }
     async changeProduct(req, res) {
         try {
-        const {productData, storeId, deliveryId, customerId} = req.body;
-        const updatedStore= await StoreService.changeProduct(productData, storeId, deliveryId, customerId);
+        const {productData, history, storeId, deliveryId, customerId} = req.body;
+        const updatedStore= await StoreService.changeProduct(productData, history, storeId, deliveryId, customerId);
         return res.json(updatedStore);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }}
     async deleteProduct(req, res) {
         try {
-            const {productData, storeId, deliveryId, customerId} = req.body;
-            const updatedStore = await StoreService.deleteProduct(productData, storeId, deliveryId, customerId);
+            const {productData, history, storeId, deliveryId, customerId} = req.body;
+            const updatedStore = await StoreService.deleteProduct(productData, history, storeId, deliveryId, customerId);
             return res.json(updatedStore);
         } catch (error) {
             res.status(400).json({ message: error.message });
