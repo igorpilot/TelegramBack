@@ -14,7 +14,7 @@ class UserController {
 
             const userData = await UserService.registration(role, email, password, firstName, lastName, phoneNumber);
 
-            res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, secure: false, sameSite: 'None', });
+            res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, secure: true, sameSite: 'None', });
             return res.json(userData);
         } catch (e) {
             console.error("❌ Помилка в UserController.registration():", e);
