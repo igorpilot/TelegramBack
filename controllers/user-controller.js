@@ -25,8 +25,7 @@ class UserController {
         try {
             const {email, password} = req.body;
             const userData = await UserService.login(email, password);
-            res.cookie('refreshToken', userData.refreshToken, {maxAge: 30*24*60*60*1000, httpOnly: true,secure: process.env.NODE_ENV === 'production',  // Виробниче середовище вимагає HTTPS
-                sameSite: 'Strict',
+            res.cookie('refreshToken', userData.refreshToken, {maxAge: 30*24*60*60*1000, httpOnly: true, secure: false, sameSite: 'None',
                 });
             return res.status(200).json(userData);
         } catch (e) { console.log(e)
