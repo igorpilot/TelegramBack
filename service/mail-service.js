@@ -3,12 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 class MailService {
     constructor() {
-        console.log("SMTP CONFIG:", {
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
-            user: process.env.SMTP_USER,
-            secure: process.env.SMTP_PORT == 465
-        });
+
         this.transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port: process.env.SMTP_PORT,

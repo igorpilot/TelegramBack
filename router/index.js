@@ -38,6 +38,13 @@ router.get('/downloadExcel/:storeId', authMiddleware, ExcelController.exportInve
 
 
 router.post('/getStore', OnlineStoreController.getStore)
+router.post("/saveLikes", authMiddleware, OnlineStoreController.saveLikes);
+router.post("/mergeLikes", authMiddleware, OnlineStoreController.mergeLikes);
+router.get("/getLikes", authMiddleware, OnlineStoreController.getLikes);
+router.post("/saveProductsInCart", authMiddleware, OnlineStoreController.saveProductsInCart);
+router.post("/mergeProductsInCart", authMiddleware, OnlineStoreController.mergeProductsInCart);
+router.get("/getProductsInCart", authMiddleware, OnlineStoreController.getProductsInCart);
+
 
 
 

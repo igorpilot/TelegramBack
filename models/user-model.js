@@ -10,7 +10,8 @@ const UserSchema = new mongoose.Schema({
     activationLink: { type: String, required: true },
     isActivated: { type: Boolean, default: false },
     customer: {
-        cart: [],
+        likedProducts: [],
+        cartProducts: [],
         orders:[]},
     stores: [{
         _id: mongoose.Schema.Types.ObjectId,

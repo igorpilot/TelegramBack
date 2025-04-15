@@ -127,6 +127,7 @@ class UserService {
         const users = await UserModel.find()
         return users
     }
+
 }
 
 export default  new UserService();

@@ -14,7 +14,9 @@ class UserController {
 
             const userData = await UserService.registration(role, email, password, firstName, lastName, phoneNumber);
 
-            res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, secure: true, sameSite: 'None', });
+            res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', });
             return res.json(userData);
         } catch (e) {
             console.error("❌ Помилка в UserController.registration():", e);
@@ -25,7 +27,9 @@ class UserController {
         try {
             const {email, password} = req.body;
             const userData = await UserService.login(email, password);
-            res.cookie('refreshToken', userData.refreshToken, {maxAge: 30*24*60*60*1000, httpOnly: true, secure: true, sameSite: 'None',
+            res.cookie('refreshToken', userData.refreshToken, {maxAge: 30*24*60*60*1000, httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
                 });
             return res.status(200).json(userData);
         } catch (e) { console.log(e)
@@ -58,7 +62,6 @@ class UserController {
                 return res.status(401).json({message: "Refresh token not provided"});
             }
             const userData = await UserService.refresh(refreshToken);
-            console.log("userData після перевірки токена:", userData);
             res.cookie('refreshToken', userData.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, secure: true, sameSite: 'None'});
             return res.json(userData);
         } catch (e) {
