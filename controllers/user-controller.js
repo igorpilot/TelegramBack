@@ -1,107 +1,40 @@
-import UserService from '../service/user-service.js';
-import { validationResult } from 'express-validator';
-import ApiError from '../exceptions/api-error.js';
+import {verifyTelegramHash} from "../utils/telegramAuth.js";
+
 
 class UserController {
-    async registration(req, res, next) {
+    async telegramAuth (req, res)  {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return next(ApiError.BadRequest('Помилка при валідації', errors.array()));
-            }
+            const { id, first_name, last_name, username, photo_url, hash } = req.body;
+            const isValid = verifyTelegramHash(req.body, process.env.BOT_TOKEN);
 
-            const {role, email, password, firstName, lastName, phoneNumber } = req.body;
+            if (!isValid) return res.status(401).json({ message: "Invalid Telegram hash" });
 
-            const userData = await UserService.registration(role, email, password, firstName, lastName, phoneNumber);
+            let user = await User.findOne({ telegramId: id });
 
-            res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', });
-            return res.json(userData);
-        } catch (e) {
-            console.error("❌ Помилка в UserController.registration():", e);
-            next(e);
-        }
-    }
-    async login(req, res, next) {
-        try {
-            const {email, password} = req.body;
-            const userData = await UserService.login(email, password);
-            res.cookie('refreshToken', userData.refreshToken, {maxAge: 30*24*60*60*1000, httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+            if (!user) {
+                user = await User.create({
+                    telegramId: id,
+                    firstName: first_name,
+                    lastName: last_name,
+                    username,
+                    photoUrl: photo_url,
+                    balance: 100,
+                    usdt: 0,
+                    level: 1,
+                    lastActiveAt: new Date(),
+                    history: [],
                 });
-            return res.status(200).json(userData);
-        } catch (e) { console.log(e)
-            next(e);
-        }
-    }
-    async logout(req, res, next) {
-        try {
-            const {refreshToken} = req.cookies;
-            const token = await UserService.logout(refreshToken);
-            res.clearCookie('refreshToken');
-            return res.json(token);
-        } catch (e) {
-            next(e);
-        }
-    }
-    async activate(req, res, next) {
-        try {
-            const activationLink= req.params.link;
-            await UserService.activate(activationLink)
-            return res.redirect(process.env.CLIENT_URL)
-        } catch (e) {
-            next(e);
-        }
-    }
-    async refresh(req, res, next) {
-        try {
-            const {refreshToken} = req.cookies;
-            if (!refreshToken) {
-                return res.status(401).json({message: "Refresh token not provided"});
+            } else {
+                user.lastActiveAt = new Date();
+                await user.save();
             }
-            const userData = await UserService.refresh(refreshToken);
-            res.cookie('refreshToken', userData.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, secure: true, sameSite: 'None'});
-            return res.json(userData);
-        } catch (e) {
-            console.error("❌ Помилка при оновленні токену:", e);
-            next(e);
-        }
-    }
-    async forgotPassword(req, res, next) {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return next(ApiError.BadRequest('Помилка при валідації', errors.array()));
-            }
-            const { email } = req.body;
 
-            const result = await UserService.forgotPassword(email);
-            return res.status(200).json(result)
+            res.json(user);
         } catch (e) {
-            console.error("❌ Помилка в UserController.forgotPassword():", e);
-            return next(e);
+            console.error(e);
+            res.status(500).json({ message: "Server error" });
         }
-    }
-    async resetPassword(req, res, next) {
-        try {
-            const { token, newPassword } = req.body;
-            const result = await UserService.resetPassword(token, newPassword);
-            return res.json(result);
-        } catch (e) {
-            console.error("❌ Помилка в UserController.resetPassword():", e);
-            return next(e);
-        }
-    }
-    async getUsers(req, res, next) {
-        try {
-            const users = await UserService.getAllUsers()
-            return res.json(users);
-        } catch (e) {
-            next(e);
-        }
-    }
+    };
 }
 
 export default new UserController();
