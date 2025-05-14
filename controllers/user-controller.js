@@ -49,15 +49,16 @@ class UserController {
     }
     async claimCoins (req, res)  {
         try {
-            const { userId, actuallyBalance } = req.body;
-            const user = await User.findOne({telegramId: userId});
+            const { userInfo} = req.body;
+            const user = await User.findOne({telegramId: userInfo.telegramId});
             if (!user) return res.status(404).json({ message: "User not found" });
             const now = Date.now();
             const CLAIM_TIME = 3 * 60 * 60;
             if (user.lastClaim && now - user.lastClaim < CLAIM_TIME) {
                 return res.status(400).json({ message: "Ще не пройшло 3 години" });
             }
-            user.balance = actuallyBalance + 100;
+            user.balance = userInfo.balance + 100;
+            user.hourlyProfit = userInfo.hourlyProfit;
             user.lastClaim = now;
 
             await user.save();
