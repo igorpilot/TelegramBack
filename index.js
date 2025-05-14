@@ -17,24 +17,15 @@ const token = process.env.TELEGRAM_BOT_TOKEN; // Встановлення ток
 const bot = new TelegramBot(token, { polling: true });
 
 // Налаштування дозволених доменів для CORS
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://fe9b-88-212-17-217.ngrok-free.app'];
 
 // Створення обробника команди /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
 
-    // Визначення кнопки для запуску гри
-    const keyboard = [
-        [
-            {
-                text: "🎮 Запустити гру", // Текст кнопки
-                web_app: { url: process.env.GAME_URL || 'https://1b60-88-212-17-217.ngrok-free.app' } // URL гри з змінної середовища
-            }
-        ]
-    ];
 
     // Відправка повідомлення з кнопкою
-    bot.sendMessage(chatId, "Привіт! Готовий до гри?", {
+    bot.sendMessage(chatId, "Hi, are you ready for earn?", {
         reply_markup: {
             keyboard: keyboard,
             resize_keyboard: true, // Щоб кнопка була адаптована під розмір екрану

@@ -1,17 +1,39 @@
 import crypto from 'crypto';
+import * as querystring from "node:querystring";
 
-export function verifyTelegramHash(data, botToken) {
-    const { hash, ...rest } = data;
-    const secret = crypto.createHash("sha256").update(botToken).digest();
+export function verifyTelegramHash(initData, botToken) {
+    if (!initData || typeof initData !== 'string') {
+        console.error("❌ Порожній або невалідний initData");
+        return false;
+    }
 
-    const dataCheckString = Object.keys(rest)
+    const parsedData = querystring.parse(initData);
+    const receivedHash = parsedData.hash;
+
+    if (!receivedHash) {
+        console.error("❌ Hash не знайдено в initData");
+        return false;
+    }
+
+    // Видаляємо hash з копії обʼєкта
+    delete parsedData.hash;
+
+    // Створюємо перевірочний рядок (тільки для ключів з валідними значеннями)
+    const dataCheckString = Object.keys(parsedData)
+        .filter((key) => parsedData[key] !== undefined)
         .sort()
-        .map(key => `${key}=${rest[key]}`)
+        .map((key) => `${key}=${parsedData[key]}`)
         .join("\n");
 
-    const hmac = crypto.createHmac("sha256", secret)
-        .update(dataCheckString)
-        .digest("hex");
+    try {
+        const secretKey = crypto.createHash("sha256").update(botToken).digest();
+        const hmac = crypto.createHmac("sha256", secretKey)
+            .update(dataCheckString)
+            .digest("hex");
 
-    return hmac === hash;
+        return hmac === receivedHash;
+    } catch (err) {
+        console.error("❌ Помилка при створенні HMAC:", err);
+        return false;
+    }
 }
