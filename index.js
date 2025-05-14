@@ -17,7 +17,7 @@ const token = process.env.TELEGRAM_BOT_TOKEN; // Встановлення ток
 const bot = new TelegramBot(token, { polling: true });
 
 // Налаштування дозволених доменів для CORS
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://fe9b-88-212-17-217.ngrok-free.app'];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://fe9b-88-212-17-217.ngrok-free.app, https://proj-six-dun.vercel.app'];
 
 // Створення обробника команди /start
 bot.onText(/\/start/, (msg) => {
