@@ -7,4 +7,6 @@ router.post("/claim-coins", UserController.claimCoins);
 router.post("/collectPassiveIncome", UserController.collectPassiveIncome);
 router.post("/logout", UserController.logout);
 router.post("/dailyReward", UserController.dailyReward);
+router.get("/friends/:id", UserController.getFriends);
+
 export default router;

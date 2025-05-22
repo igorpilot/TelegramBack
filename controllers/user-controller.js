@@ -1,9 +1,13 @@
 import User from '../models/user-model.js';
 
 class UserController {
-    async telegramAuth (req, res)  {
+    async telegramAuth(req, res) {
         try {
             const { id, first_name, last_name, username, photo_url, hash } = req.body;
+            let referrerId = req.query.start;
+            if (referrerId && referrerId.startsWith('ref_')) {
+                referrerId = referrerId.split('_')[1];
+            }
 
             let user = await User.findOne({ telegramId: id });
 
@@ -14,12 +18,29 @@ class UserController {
                     lastName: last_name,
                     username,
                     photoUrl: photo_url,
-                    balance: 100,
-                    usdt: 0,
+                    balance: referrerId ? 1000 : 100,
+                    usdt: referrerId ? 5 : 0,
                     level: 1,
                     lastActiveAt: new Date(),
                     history: [],
+                    referralFrom: referrerId || null,
                 });
+
+                if (referrerId) {
+                    const referrerExists = await User.exists({ telegramId: referrerId });
+                    if (referrerExists) {
+                        await User.updateOne(
+                            { telegramId: referrerId },
+                            {
+                                $addToSet: { friends: id }, // Використовуємо $addToSet замість push, щоб уникнути дублікатів
+                                $inc: {
+                                    balance: 1000,          // Збільшуємо баланс на 1000
+                                    hourlyProfit: 50        // Збільшуємо hourlyProfit на 50
+                                }
+                            }
+                        );
+                    }
+                }
             }
 
             res.json(user);
@@ -27,9 +48,30 @@ class UserController {
             console.error(e);
             res.status(500).json({ message: "Server error in telegramAuth" });
         }
-    };
+    }
+    async getFriends(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Знаходимо користувача з його друзями (з populate якщо потрібні повні дані)
+            const user = await User.findOne({ telegramId: id }).select('friends');
+
+            if (!user) {
+                return res.status(404).json({ message: "Користувача не знайдено" });
+            }
+
+            // Знаходимо всіх друзів (базова версія)
+            const friends = await User.find({
+                telegramId: { $in: user.friends }
+            }).select('telegramId username firstName lastName photoUrl balance createdAt');
+
+            res.json(friends);
+        } catch (e) {
+            console.error('Помилка при отриманні друзів:', e);
+            res.status(500).json({ message: "Помилка сервера" });
+        }
+    }
     async logout (req, res)  {
-        console.log("Отримано запит логауту", req.body);
             try {
                 const { userInfo } = req.body;
 

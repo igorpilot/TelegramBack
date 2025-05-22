@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import router from './router/index.js';
 import dotenv from 'dotenv';
 import TelegramBot from 'node-telegram-bot-api';
+import UserController from "./controllers/user-controller.js";
 
 dotenv.config();
 
@@ -14,11 +15,58 @@ const app = express();
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://fe9b-88-212-17-217.ngrok-free.app', 'https://proj-six-dun.vercel.app'];
-
-bot.onText(/\/start/, (msg) => {
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://ef25-88-212-17-217.ngrok-free.app', 'https://proj-six-dun.vercel.app'];
+const keyboard = [
+    ["Почати", "Допомога"],
+    ["Налаштування"]
+];
+bot.onText(/\/start$/, (msg) => {
     const chatId = msg.chat.id;
+    sendWelcomeMessage(chatId);
+});
 
+// Обробка /start з параметрами
+bot.onText(/\/start (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const startParam = match[1];
+
+    if (startParam.startsWith('ref_')) {
+        const referrerId = startParam.split('_')[1];
+
+        try {
+            // Створюємо об'єкт запиту, який очікує ваш контролер
+            const req = {
+                body: {
+                    id: msg.from.id,
+                    first_name: msg.from.first_name,
+                    last_name: msg.from.last_name,
+                    username: msg.from.username,
+                    photo_url: msg.from.photo_url || '',
+                    hash: ''
+                },
+                query: {
+                    start: referrerId
+                }
+            };
+
+            const res = {
+                json: (data) => console.log('User created:', data),
+                status: (code) => ({
+                    json: (data) => console.error('Error:', code, data)
+                })
+            };
+
+            await UserController.telegramAuth(req, res);
+        } catch (e) {
+            console.error('Помилка реферальної системи:', e);
+        }
+    }
+
+    sendWelcomeMessage(chatId);
+});
+
+// Функція для відправки привітання
+function sendWelcomeMessage(chatId) {
     bot.sendMessage(chatId, "Hi, are you ready for earn?", {
         reply_markup: {
             keyboard: keyboard,
@@ -26,7 +74,7 @@ bot.onText(/\/start/, (msg) => {
             one_time_keyboard: true
         }
     });
-});
+}
 
 app.set('trust proxy', 1);
 app.use(cors({
