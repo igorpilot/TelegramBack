@@ -15,7 +15,7 @@ const app = express();
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://ef25-88-212-17-217.ngrok-free.app', 'https://proj-six-dun.vercel.app'];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://0ad7-88-212-17-217.ngrok-free.app', 'https://proj-six-dun.vercel.app'];
 const keyboard = [
     ["Почати", "Допомога"],
     ["Налаштування"]
@@ -35,14 +35,13 @@ bot.onText(/\/start (.+)/, async (msg, match) => {
 
         try {
             // Створюємо об'єкт запиту, який очікує ваш контролер
+            console.log(msg.from)
             const req = {
                 body: {
                     id: msg.from.id,
                     first_name: msg.from.first_name,
                     last_name: msg.from.last_name,
                     username: msg.from.username,
-                    photo_url: msg.from.photo_url || '',
-                    hash: ''
                 },
                 query: {
                     start: referrerId
@@ -65,7 +64,6 @@ bot.onText(/\/start (.+)/, async (msg, match) => {
     sendWelcomeMessage(chatId);
 });
 
-// Функція для відправки привітання
 function sendWelcomeMessage(chatId) {
     bot.sendMessage(chatId, "Hi, are you ready for earn?", {
         reply_markup: {
