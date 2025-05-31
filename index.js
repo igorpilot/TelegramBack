@@ -60,12 +60,11 @@ bot.onText(/\/start (.+)/, async (msg, match) => {
 
     sendWelcomeMessage(chatId);
 });
-bot.onText(/\/start gift_lottery-(\d+)-([a-f0-9\-]+)-(.+)/, async (msg, match) => {
+bot.onText(/\/start gift_lottery-(\d+)-([^-]+)-([a-f0-9\-]+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const fromUserId = match[1];
-    const giftId = match[2];
-    const lotteryId = match[3];
-
+    const lotteryId = match[2];
+    const giftId = match[3];
 
     try {
         const req = {
