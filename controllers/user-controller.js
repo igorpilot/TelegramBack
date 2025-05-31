@@ -1,6 +1,7 @@
 import User from '../models/user-model.js';
 import Task from '../models/task-model.js';
 import UserService from "../service/user-service.js";
+import {v1} from "uuid";
 
 const getXpForLevel = (level) => {
     return 1000 * Math.pow(5, level - 1);
@@ -289,11 +290,12 @@ class UserController {
             }
 
             if (lottery.origin === "received") {
-                const index = user.lotteries.received.findIndex(
-                    (f) => f.id === lottery.id && f.from === lottery.from
+                const item = user.lotteries.received.find(
+                    (f) => f.id === lottery.id && f.from === lottery.from && !f.used
                 );
-                if (index !== -1) {
-                    user.lotteries.received.splice(index, 1);
+
+                if (item) {
+                    item.used = true;
                 }
             }
             const now = new Date();
@@ -319,7 +321,7 @@ class UserController {
     async receiveGiftLottery(req, res) {
         try {
             const { telegramUser, gift } = req.body;
-            const { from, lotteryId } = gift;
+            const { from, lotteryId, giftId } = gift;
 
             const user = await UserService.ensureTelegramUser({
                 telegramUser,
@@ -327,16 +329,21 @@ class UserController {
             });
 
             const alreadyReceived = user.lotteries.received.some(
-                (lot) => lot.id === lotteryId && lot.from === from
+                (lot) => lot.giftId === giftId
             );
 
             if (alreadyReceived) {
-                return res.status(400).json({ success: false, message: "Ви вже отримали цей подарунок." });
+                return res.status(400).json({
+                    success: false,
+                    message: "⛔️ Цей подарунок уже був використаний."
+                });
             }
 
             user.lotteries.received.push({
                 id: lotteryId,
-                from: from
+                from: from,
+                giftId,
+                date: new Date()
             });
 
             await user.save();

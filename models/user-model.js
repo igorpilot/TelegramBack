@@ -24,7 +24,9 @@ const userSchema = new Schema({
         received: [{
             id: { type: String, required: true },
             from: { type: String, required: true },
-            date: { type: Date, default: Date.now }
+            date: { type: Date, default: Date.now },
+            giftId: { type: String, required: true },
+            used: { type: Boolean, default: false },
         }]
     },
     referralFrom: { type: String, default: null },
