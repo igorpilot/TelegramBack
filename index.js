@@ -15,7 +15,7 @@ const app = express();
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://0ad7-88-212-17-217.ngrok-free.app', 'https://proj-six-dun.vercel.app'];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001','https://a6bf-88-212-17-217.ngrok-free.app', 'https://proj-six-dun.vercel.app'];
 const keyboard = [
     ["Почати", "Допомога"],
     ["Налаштування"]
@@ -25,7 +25,6 @@ bot.onText(/\/start$/, (msg) => {
     sendWelcomeMessage(chatId);
 });
 
-// Обробка /start з параметрами
 bot.onText(/\/start (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const startParam = match[1];
@@ -34,8 +33,6 @@ bot.onText(/\/start (.+)/, async (msg, match) => {
         const referrerId = startParam.split('_')[1];
 
         try {
-            // Створюємо об'єкт запиту, який очікує ваш контролер
-            console.log(msg.from)
             const req = {
                 body: {
                     id: msg.from.id,
@@ -63,7 +60,51 @@ bot.onText(/\/start (.+)/, async (msg, match) => {
 
     sendWelcomeMessage(chatId);
 });
+bot.onText(/\/start gift_lottery-(\d+)-(.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const fromUserId = match[1];
+    const lotteryId = match[2];
 
+    try {
+        const req = {
+            body: {
+                telegramUser: {
+                    id: msg.from.id,
+                    first_name: msg.from.first_name,
+                    last_name: msg.from.last_name,
+                    username: msg.from.username,
+                },
+                gift: {
+                    from: fromUserId,
+                    lotteryId: lotteryId,
+                }
+            }
+        };
+
+        const res = {
+            json: (data) => {
+                bot.sendMessage(chatId, data.message);
+
+                if (data.success && data.notifySender) {
+                    bot.sendMessage(fromUserId, `✅ Ваш подарунок був прийнятий користувачем @${msg.from.username || msg.from.first_name}`);
+                }
+            },
+            status: (code) => ({
+                json: (data) => {
+                    bot.sendMessage(chatId, `❌ ${data.message || "Помилка при обробці подарунка."}`);
+                }
+            })
+        };
+
+        await UserController.receiveGiftLottery(req, res);
+
+    } catch (e) {
+        console.error("Помилка в обробці подарунка:", e);
+        bot.sendMessage(chatId, `❌ Сталася непередбачувана помилка.`);
+    }
+
+    sendWelcomeMessage(chatId);
+});
 function sendWelcomeMessage(chatId) {
     bot.sendMessage(chatId, "Hi, are you ready for earn?", {
         reply_markup: {

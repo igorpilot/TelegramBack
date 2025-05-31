@@ -1,77 +1,30 @@
 import User from '../models/user-model.js';
 import Task from '../models/task-model.js';
+import UserService from "../service/user-service.js";
 
+const getXpForLevel = (level) => {
+    return 1000 * Math.pow(5, level - 1);
+};
+const levelUp = (user, xpToAdd) => {
+    user.experience += xpToAdd;
+
+    while (user.experience >= getXpForLevel(user.level)) {
+        user.experience -= getXpForLevel(user.level);
+        user.level += 1;
+    }
+};
 class UserController {
+
     async telegramAuth(req, res) {
         try {
-            const { id, first_name, last_name, username, photo_url, hash } = req.body;
-            let referrerId = req.query.start;
-            if (referrerId && referrerId.startsWith('ref_')) {
-                referrerId = referrerId.split('_')[1];
-            }
+            const referrerIdRaw = req.query.start;
+            let referrerId = referrerIdRaw?.startsWith('ref_') ? referrerIdRaw.split('_')[1] : null;
 
-            let user = await User.findOne({ telegramId: id });
-            if (user && user.photoUrl !== photo_url) {
-                user.photoUrl = photo_url;
-                    await user.save()
+            const user = await UserService.ensureTelegramUser({
+                telegramUser: req.body,
+                referrerId
+            });
 
-            }
-            if (!user) {
-                user = await User.create({
-                    telegramId: id,
-                    firstName: first_name,
-                    lastName: last_name,
-                    username,
-                    photoUrl: photo_url,
-                    balance: referrerId ? 1000 : 100,
-                    usdt: referrerId ? 5 : 0,
-                    level: 1,
-                    lastActiveAt: new Date(),
-                    consecutiveLoginDays: 1,
-                    history: [],
-                    referralFrom: referrerId || null,
-                });
-
-                if (referrerId) {
-                    const referrerExists = await User.exists({ telegramId: referrerId });
-                    if (referrerExists) {
-                        await User.updateOne(
-                            { telegramId: referrerId },
-                            {
-                                $addToSet: { friends: id },
-                                $inc: {
-                                    balance: 1000,
-                                    hourlyProfit: 50
-                                }
-                            }
-                        );
-                    }
-                }
-            } else {
-                const today = new Date();
-                const last = user.lastActiveAt ? new Date(user.lastActiveAt) : null;
-
-                const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                const lastDate = last ? new Date(last.getFullYear(), last.getMonth(), last.getDate()) : null;
-                const dailyTaskIds = ['23', '210'];
-                if (lastDate) {
-                    const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
-                    if (diffDays >= 1) {
-                        // 🧹 Очистити щоденні таски
-                        user.completedTasks = user.completedTasks.filter(
-                            (taskId) => !dailyTaskIds.includes(taskId)
-                        );
-                        user.ticketsUsedToday = 0
-
-                        // 🔁 Оновити streak
-                        user.consecutiveLoginDays = diffDays === 1 ? user.consecutiveLoginDays + 1 : 1;
-                    }
-                } else {
-                    user.consecutiveLoginDays = 1;
-                }
-
-                await user.save();
-            }
             res.json(user);
         } catch (e) {
             console.error(e);
@@ -92,7 +45,7 @@ class UserController {
             // Знаходимо всіх друзів (базова версія)
             const friends = await User.find({
                 telegramId: { $in: user.friends }
-            }).select('telegramId username firstName lastName photoUrl hourlyProfit createdAt');
+            }).select('telegramId username level firstName lastName photoUrl hourlyProfit createdAt');
 
             res.json(friends);
         } catch (e) {
@@ -108,6 +61,9 @@ class UserController {
                 if (!user) return res.status(404).json({ message: "User not found" });
 
                 user.balance = userInfo.balance;
+                user.usdt = userInfo.usdt;
+                user.level = userInfo.level
+                user.experience = userInfo.experience
                 user.hourlyProfit= userInfo.hourlyProfit;
                 user.lastActiveAt = new Date();
                 await user.save();
@@ -142,8 +98,9 @@ class UserController {
     }
     async dailyReward(req, res) {
         try {
-            const { userId, actuallyBalance } = req.body;
-            const user = await User.findOne({ telegramId: userId });
+            const {actuallyBalance } = req.body;
+            const {id} = req.params
+            const user = await User.findOne({ telegramId: id });
 
             if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -161,8 +118,10 @@ class UserController {
                 }
             }
 
-            const reward = 50;
-            user.balance= actuallyBalance +reward;
+            const rewardCoins = 50;
+            const rewardXp = 50;
+            user.balance= actuallyBalance +rewardCoins;
+            user.experience += rewardXp;
             user.lastDailyReward = now;
             await user.save();
 
@@ -236,6 +195,7 @@ class UserController {
                 if ((user.friends.length) >= task.number ) {
                     user.completedTasks.push(task.id);
                     user.balance += task.reward;
+                    levelUp(user, task.experience)
                     await user.save();
                     return res.json({ message: "Task completed", user: user });
                 } else { return res.status(404).json({ message: "Task not completed" }); }
@@ -252,6 +212,7 @@ class UserController {
                     if (!user.completedTasks.includes(task.id)) {
                         user.completedTasks.push(task.id);
                         user.balance += task.reward;
+                        levelUp(user, task.experience)
                         await user.save();
                     }
                     return res.json({ message: "Task completed", user: user });
@@ -264,6 +225,7 @@ class UserController {
                     if (!user.completedTasks.includes(task.id)) {
                         user.completedTasks.push(task.id);
                         user.balance += task.reward;
+                        levelUp(user, task.experience)
                         await user.save();
                         return res.json({ message: "Task completed", user: user });
                     } else {
@@ -279,13 +241,61 @@ class UserController {
             return res.status(500).json({ message: "Server error" });
         }
     }
-    async useTicket(req, res) {
+    async ticketUse(req, res) {
+        try {
+            const { id } = req.params;
+            const {lottery, action} = req.body
+            const user = await User.findOne({ telegramId: id });
+            if (!user) return res.status(404).json({ message: "User not found" });
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const last = user.lastTicketUseDate ? new Date(user.lastTicketUseDate) : null;
+
+
+            if(action !== "save") {
+                if (!last || last < today) {
+                user.ticketsUsedToday = 1;
+            } else {
+                user.ticketsUsedToday += 1;
+            }
+                user.lastTicketUseDate = now;
+                levelUp(user, lottery.experience)
+            }
+            user.balance -= lottery.cost;
+            user.hourlyProfit += lottery.hourlyProfit;
+            if(action === "save") {
+                user.lotteries.purchased.push(lottery.id);
+            }
+            await user.save();
+
+            res.json({ user: user });
+        } catch (e) {
+            console.error(e);
+            res.status(500).json({ message: "Server error using ticket" });
+        }
+    }
+    async ticketUsed(req, res) {
         try {
             const { id } = req.params;
             const {lottery} = req.body
             const user = await User.findOne({ telegramId: id });
             if (!user) return res.status(404).json({ message: "User not found" });
+            if (lottery.origin === "purchased") {
+                const index = user.lotteries.purchased.indexOf(lottery.id);
+                if (index !== -1) {
+                    user.lotteries.purchased.splice(index, 1);
+                }
+            }
 
+            if (lottery.origin === "received") {
+                const index = user.lotteries.received.findIndex(
+                    (f) => f.id === lottery.id && f.from === lottery.from
+                );
+                if (index !== -1) {
+                    user.lotteries.received.splice(index, 1);
+                }
+            }
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const last = user.lastTicketUseDate ? new Date(user.lastTicketUseDate) : null;
@@ -296,18 +306,52 @@ class UserController {
                 user.ticketsUsedToday += 1;
             }
 
-            user.lastTicketUseDate = now;
-            user.balance -= lottery.cost;
-            user.hourlyProfit += lottery.hourlyProfit;
-            await user.save();
+                user.lastTicketUseDate = now;
+                levelUp(user, lottery.experience)
 
-            res.json({ user: user });
+            await user.save();
+            res.json({ user });
         } catch (e) {
             console.error(e);
             res.status(500).json({ message: "Server error using ticket" });
         }
     }
+    async receiveGiftLottery(req, res) {
+        try {
+            const { telegramUser, gift } = req.body;
+            const { from, lotteryId } = gift;
 
+            const user = await UserService.ensureTelegramUser({
+                telegramUser,
+                referrerId: from
+            });
+
+            const alreadyReceived = user.lotteries.received.some(
+                (lot) => lot.id === lotteryId && lot.from === from
+            );
+
+            if (alreadyReceived) {
+                return res.status(400).json({ success: false, message: "Ви вже отримали цей подарунок." });
+            }
+
+            user.lotteries.received.push({
+                id: lotteryId,
+                from: from
+            });
+
+            await user.save();
+
+            return res.json({
+                success: true,
+                message: "🎉 Ви отримали подарункову лотерейку від друга!",
+                notifySender: true
+            });
+
+        } catch (error) {
+            console.error("Помилка в receiveGiftLottery:", error);
+            return res.status(500).json({ success: false, message: "Помилка сервера при обробці подарунка." });
+        }
+    }
 }
 
 export default new UserController();
